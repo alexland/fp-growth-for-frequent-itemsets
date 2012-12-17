@@ -1,12 +1,12 @@
 #!/usr/local/bin/python2.7
 # encoding: utf-8
 
-# TODO: remove inferequent items
 
 import os
 import sys
 import collections as CL
 import numpy as NP
+
 
 t1 = ['e', 'a', 'd', 'b']
 t2 = ['d', 'a', 'c', 'e', 'b']
@@ -39,7 +39,7 @@ def priority_order(trow, cn):
 	return x.tolist()
 
 
-def priority_table(data, support):
+def header_table(data, min_support):
 	"""
 		returns: data w/ each transaction resorted in frequency order;
 		pass in: data, a python nested list, and support,
@@ -49,9 +49,36 @@ def priority_table(data, support):
 	t_all = [itm for row in data for itm in row]
 	cn = Counter(t_all)
 	pt = [priority_order(trow, cn) for trow in data]
-	s = (len(data) * support) / 100.
+	s = (len(data) * min_support) / 100.
 	cn = { k:v for k, v in cn.iteritems() if v > s }
 	items_over_support = cn.keys()
 	return [[itm for itm in row if itm in items_over_support]
 		for row in pt]
 
+
+def fp_io(data):
+	"""
+	returns: original data as a dictionary of frozensets (keys),
+		and freq (values);
+	pass in: data as nested python list;
+	this fn transforms raw data for input to
+	the fptree builder
+	"""
+	dx = {}
+	keys = map(frozenset, data)
+	for k in keys:
+		dx[k] += dx.setdefault(k, 1)
+	return dx
+
+
+class TreeNode:
+
+	def __init__(self, name, sum_items, parent):
+		self.name = name
+		self.count = sum_items
+		self.nodeLink = None
+		self.parent = parent      # needs to be updated
+		self.children = {}
+
+	def inc(self, frequency):
+		self.count += frequency
