@@ -39,15 +39,19 @@ def priority_order(trow, cn):
 	return x.tolist()
 
 
-def priority_table(data):
+def priority_table(data, support):
 	"""
-		returns:  ;
-		pass in: data, a python nested list;
+		returns: data w/ each transaction resorted in frequency order;
+		pass in: data, a python nested list, and support,
+			as an integer percentage;
 	"""
 	from collections import Counter
 	t_all = [itm for row in data for itm in row]
 	cn = Counter(t_all)
-	return [priority_order(trow, cn) for trow in data]
+	pt = [priority_order(trow, cn) for trow in data]
+	s = (len(data) * support) / 100.
+	cn = { k:v for k, v in cn.iteritems() if v > s }
+	items_over_support = cn.keys()
+	return [[itm for itm in row if itm in items_over_support]
+		for row in pt]
 
-
-def remove_infrequent_items(priority_table):
