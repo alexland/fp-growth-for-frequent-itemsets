@@ -46,9 +46,11 @@ def header_table(data, min_support):
 			as an integer percentage;
 	"""
 	from collections import Counter
+	# flatten data to count item frequency
 	t_all = [itm for row in data for itm in row]
 	cn = Counter(t_all)
 	pt = [priority_order(trow, cn) for trow in data]
+	# translate min_support from percent to raw count
 	s = (len(data) * min_support) / 100.
 	cn = { k:v for k, v in cn.iteritems() if v > s }
 	items_over_support = cn.keys()
@@ -59,7 +61,7 @@ def header_table(data, min_support):
 def fp_io(data):
 	"""
 	returns: original data as a dictionary of frozensets (keys),
-		and freq (values);
+		and freqs (vals);
 	pass in: data as nested python list;
 	this fn transforms raw data for input to
 	the fptree builder
