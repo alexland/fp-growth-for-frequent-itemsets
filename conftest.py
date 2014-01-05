@@ -3,11 +3,12 @@
 import pytest
 
 
+#------------------ content of test_strings.py ---------------#
 def test_compute(param1): 
 	assert param1 < 4
 	
 	
-#---------- content of conftest.py ----------#
+#---------------- content of conftest.py ----------------#
 
 def pytest_addoption(parser): 
 	parser.addoption("--stringinput", action="append", default=[], help="list of str inputs for test fns")
