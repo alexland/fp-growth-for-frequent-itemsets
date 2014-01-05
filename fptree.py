@@ -1,27 +1,6 @@
 # encoding: utf-8
 
 """
-definitions:
-
-fp-tree: the graph that encodes the frequent itemsets information;
-
-fp-growth: the technique for building fp-tree and extracing info from it
-
-header table: a dict whose keys are the unique items comprising the 
-transactions (data rows); the value for each key is a list of len 2; the first
-item is the item frequency, the second is a pointer which points to the 
-first occurrence of that item in the tree; this pointer, along w/
-the 'node_link" attribute for each node, allow efficient traversal of all 
-instances of an item type (eg, 'A') across the tree branches; this node
-(pointed to in the htab) represents the terminus of the path defined
-by nodes of the same type within a single fptree.
-
-prefix path: the nodes comparising the path between root node & the 
-	 item being queried; prefix paths are used to createa 
-	 a conditional fp-tree
-
-conditional pattern base: collection of prefix paths
-
 
 """
 
@@ -72,38 +51,28 @@ def config_fptree_builder(data):
 	returns: header table & data for input to build_tree;
 	pass in: raw data (nested list of transactions);
 	"""
-	data = [ set(trans) for trans in data ]
+	# data = [ set(trans) for trans in data ]
 	# flatten the data (from list of sets to list of items)
 	trans_flat = [itm for trans in data for itm in trans]
 	# get frequency of each item
 	item_counter = CL.defaultdict(int)
 	for itm in trans_flat:
 		item_counter[itm] += 1
-	item_counter = sorted([(v, k) for k, v in item_counter.items() ], reverse=True)
-	# list of items sorted by decreasing frequency
-	fi = [t[1] for t in item_counter]
-	# now use 'fi' to reorder the original data so that the 
-	# items w/in each transaction are sorted by decreasing frequency:
-	item_counter_orddict = CL.OrderedDict([ (t[1], t[0]) for t in item_counter ])
-	fnx = lambda q: (item_counter_orddict[q], q)
-	# transactions (data rows) sorted in frequency order
-	# the contents in this container are used to build the fptree
-	# return data w/ correct itm orering w/in transactions 
-	transactions = [ sorted([fnx(itm) for itm in data[i]], reverse=True) 
-		for i in range(len(data)) ]
-	# now remove the sort key from each transaction item
-	#'transactions' is the 'normalized' dataset; and
-	# is used to build the fptree
-	transactions = [ [t[1] for t in transactions[i]] 
-		for i in range(len(transactions)) ]
+	# to sort by decr frequency, then secondary (alpha) sort by key (incr),
+	# sort first by secondary key, then again by primary key
+	ic = sorted([(k, v) for k, v in item_counter.items()], 
+		key=itemgetter(0))
+	ic = sorted(ic, key=itemgetter(1), reverse=True)
+	sort_key = {t[0]: i for i, t in enumerate(ic)}
+	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
+	transactions = list(map(fnx, data))
 	# build header table from freq_items w/ empty placeholders for node pointer
 	htable = CL.defaultdict(list)
-	for k in item_counter_orddict.keys():
-	    htable[k].append(item_counter_orddict[k])
+	for k in item_counter.keys():
+	    htable[k].append(item_counter[k])
 	return htable, transactions
  
  
-
 class TreeNode:
 
 	def __init__(self, node_name, parent_node):
@@ -116,24 +85,6 @@ class TreeNode:
 	def incr(self, freq=1):
 		self.count += freq 
  
-# initialize fptree
-
-	# eg, fptree = TreeNode(node_name='root', count=1, parent_node=None)
-
-# now build tree by adding the "normalized" transactions, one at a time;
-	# so for each transaction:
-
-	# (i) check whether the first itm in trans is a child node in the 
-	# 	parent node; 
-		# (a) # IF YES, then INCREMENT THE COUNT of that child node;
-		# (b) ELSE, ADD THE TRANSACTION as a child of that parent node
-			# by calling TreeNode()
-			
-"""
-to add transaction as a child of a given parent node:
-someNode.children['node_name'] = FPG.TreeNode('node_name', 3, None)
-
-"""
 			
 	# (ii) check whether itm is in header table, IF YES, then INCREMENT THE COUNT;
 	# (II) ELSE, ADD THE ITM to the header table; 
@@ -155,7 +106,8 @@ def add_nodes(trans, header_table, parent_node):
 		header table (dict)
 		parent_node (instance of class TreeNode);
 	returns: nothing, converts a single transaction to
-		nodes (or increments counts if exists)
+		nodes in an fp-tree (or increments counts if exists)
+		and updates the companion header table 
 	"""
 	while len(trans) > 0:
 		itm = trans.pop(0)
@@ -199,11 +151,6 @@ def build_fptree(transactions):
 	return fptree, header_table
 
 	
-
-# so to build an fptree, call 'config_fptree_builder', passing in the raw data;
-# this returns a 'blank' header table and data processed to build the tree,
-# next, call 'build_fptree' (unbound, it returns nothing),
-# passing in the two params returned from call to 'config_fptree_builder'
 
 
 #---------------------- querying the fp-tree -----------------------#
