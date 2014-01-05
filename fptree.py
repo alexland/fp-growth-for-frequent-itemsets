@@ -6,10 +6,20 @@
 
 # TODO: refactor, where appropriate, comprehensions as generator expressions
 # FIXME: min_spt doesn't make sense for my use cases
+# TODO: add min support
+
+# TODO: make build_tree a partial so 'htab' doesn't have to passed in
+# TODO: above: add_nodes_ = partial(add_nodes, header_table=header_table)
+# TODO: create variable to avoid repeated lookups for 'parent_node.children[itm]'
+# TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
+# TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
+
+
 
 import collections as CL
 from operator import itemgetter
 from functools import partial
+import itertools as IT
 
 
 
@@ -20,26 +30,27 @@ from functools import partial
 
 
 data = [
-	['c', 'a', 't', 's'],
-	['c', 'a', 't', 's', 'u', 'p'],
-	['c', 'a', 't'],
-	['c', 'a', 't', 'c', 'h'],
-	['c', 'a', 't', 'n', 'i', 'p'],
-	['c', 'a', 't', 'e', 'g', 'o', 'r', 'y'],
-	['c', 'a', 't', 'i', 'o', 'n'],
-	['c', 'a', 't', 'a', 'p', 'u', 'l', 't'],
-	['c', 'a', 't', 'c', 'h', 'y'],
-	['c', 'a', 't', 'a', 'l', 'o', 'g'],
-	['c', 'a', 't', 'e', 'r'],
-	['c', 'a', 't', 's'],
-	['c', 'a', 't', 'a', 'r', 'a', 'c', 't'],
-	['c', 'a', 't', 't', 'l', 'e'],
-	['a', 't', 'o', 'm'],
-	['e', 'r', 'r', 'o', 'r'],
-	['a', 't', 'm'],
-	['l', 'e', 'a', 'r', 'n'],
-	['t', 'e', 'r', 'm'],
-	['a', 't', 't', 'a', 'c', 'h']
+	['C', 'A', 'T', 'S'],
+	['C', 'A', 'T', 'S', 'U', 'P'],
+	['C', 'A', 'T'],
+	['C', 'A', 'T', 'C', 'H'],
+	['C', 'A', 'T', 'A', 'N'],
+	['C', 'A', 'T', 'N', 'I', 'P'],
+	['C', 'A', 'T', 'E', 'G', 'O', 'R', 'Y'],
+	['C', 'A', 'T', 'I', 'O', 'N'],
+	['C', 'A', 'T', 'A', 'P', 'U', 'L', 'T'],
+	['C', 'A', 'T', 'C', 'H', 'Y'],
+	['C', 'A', 'T', 'A', 'L', 'O', 'G'],
+	['C', 'A', 'T', 'E', 'R'],
+	['C', 'A', 'T', 'S'],
+	['C', 'A', 'T', 'A', 'R', 'A', 'C', 'T'],
+	['C', 'A', 'T', 'T', 'L', 'E'],
+	['A', 'T', 'O', 'M'],
+	['E', 'R', 'R', 'O', 'R'],
+	['A', 'T', 'M'],
+	['L', 'E', 'A', 'R', 'N'],
+	['T', 'E', 'R', 'M'],
+	['A', 'T', 'T', 'A', 'C', 'H']
 ]
 
 
@@ -60,12 +71,12 @@ def config_fptree_builder(data):
 		item_counter[itm] += 1
 	# to sort by decr frequency, then secondary (alpha) sort by key (incr),
 	# sort first by secondary key, then again by primary key
-	ic = sorted([(k, v) for k, v in item_counter.items()], 
+	ic = sorted(((k, v) for k, v in item_counter.items()), 
 		key=itemgetter(0))
 	ic = sorted(ic, key=itemgetter(1), reverse=True)
 	sort_key = {t[0]: i for i, t in enumerate(ic)}
 	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
-	transactions = list(map(fnx, data))
+	transactions = map(fnx, data)
 	# build header table from freq_items w/ empty placeholders for node pointer
 	htable = CL.defaultdict(list)
 	for k in item_counter.keys():
@@ -86,19 +97,6 @@ class TreeNode:
 		self.count += freq 
  
 			
-	# (ii) check whether itm is in header table, IF YES, then INCREMENT THE COUNT;
-	# (II) ELSE, ADD THE ITM to the header table; 
-	
-
-# TODO: add to 'build_tree' code to update header table
-# TODO: add to 'build_tree' conditionals to check if node is already a child
-# TODO; consider having 2 header tables, lne for count, one for node pointers
-# TODO: make build_tree a partial so 'htab' doesn't have to passed in
-# TODO: above: add_nodes_ = partial(add_nodes, header_table=header_table)
-# TODO: create variable to avoid repeated lookups for 'parent_node.children[itm]'
-# TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
-
-
 def add_nodes(trans, header_table, parent_node):
 	"""
 	pass in: 
@@ -140,7 +138,8 @@ def build_fptree(transactions):
 		raw data (list of transactions; one transcation per list)
 	returns: fptree;
 	instantiates fptree and builds it by calling 'add_node';
-	when called, bind result to eg, 'fptree'
+	when called, bind result to 2 variables: one for thetree;
+	the second for for the header table;
 	"""
 	fptree = TreeNode('root', None)
 	root = fptree
@@ -150,7 +149,39 @@ def build_fptree(transactions):
 	header_table = {k:v[:2] for k, v in header_table.items()}
 	return fptree, header_table
 
+
+def main():
+	build_fptree(data)
+
+
+def fpt(tn):
+	"""
+	returns: None;
+	pass in: an fptree node;
+	convenience funciton for informal, node-by-node introspection
+	of the fptree object; call unbound to variable
+	"""
+	print("count: {0}".format(tn.count))
+	print("name: {0}".format(tn.name))
+	print("children: {0}".format(list(tn.children.keys())))
+	print("parent: {0}".format(tn.parent.name))
+
+
+if __name__ == '__main__':
 	
+	data = [
+		['E', 'B', 'D', 'A'],
+		['E', 'A', 'D', 'C', 'B'],
+		['C', 'E', 'B', 'A'],
+		['A', 'B', 'D'],
+		['D'],
+		['D', 'B'],
+		['D', 'A', 'E'],
+		['B', 'C'],
+	 ]
+	 # returns complete fp-tree & header table
+	fptree, htab = main(data)
+
 
 
 #---------------------- querying the fp-tree -----------------------#
