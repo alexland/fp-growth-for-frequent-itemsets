@@ -6,7 +6,11 @@ from functools import partial
 import itertools as IT
 
 import pytest
-import fpgrowth_dy as FPG
+import fptree as FPT
+
+
+# TODO: setup each dataset as a 'fixture'
+# TODO: research caching of module under test
 
 
 #-------------------------- test set-up & tear-down -----------------#
@@ -53,7 +57,6 @@ data2 = [
 def myFixture1():
 	return 5
 
-
 @pytest.fixture(scope="module")
 def myFixture2():
 	return 2
@@ -84,11 +87,11 @@ def items_frequency(data):
 	
 
 def build_fptree(data):
-	fptree = FPG.TreeNode('root', None)
+	fptree = FPT.TreeNode('root', None)
 	root = fptree
-	htab, transactions = FPG.config_fptree_builder(data)
+	htab, transactions = FPT.config_fptree_builder(data)
 	for trans in transactions:
-		FPG.add_nodes(trans, htab, root)
+		FPT.add_nodes(trans, htab, root)
 	htab = {k:v[:2] for k, v in htab.items()}
 	return htab, fptree
 
@@ -109,6 +112,48 @@ def unique_items():
 	return {itm for trans in data for itm in trans}
 
 
+def like_item_traversal1(data, itm):
+	"""
+	pass in: dataset & single transaction item (str), which
+		can be any key in the header_table;
+	returns: node_route (list) comprised of all node names
+		linked in one continuous route;
+	checks that the 'node_link' attribute for any node points 
+	to another having the same 'name' attribute (ie, all nodes
+	linked via their 'node_link' attribute have the same name);
+	this is done by gathering 'name' attribute of all nodes in route
+	calling 'set' on the list and checking that length is 1;
+	"""
+	htab, fptree = build_fptree(data)
+	node_route = []
+	node = htab[itm][-1]
+	while node != None:
+		node_route.append(node.name)
+		node = node.node_link
+	return len(set(node_route))
+	
+
+def like_item_traversal2(data, itm):
+	"""
+	pass in: dataset & single transaction item (str), which
+		can be any key in the header_table;
+	returns: a node_route (list) comprised of all node names
+		linked in one continuous route;
+	checks that the 'node_link' attribute for any node points 
+	to another having the same 'name' attribute (ie, all nodes
+	linked via their 'node_link' attribute have the same name);
+	this is done by gathering 'name' attribute of all 'linked' nodes
+	(eg, all nodes w/ name attribute 'A')
+	and checking that they are all the same and equal to 'itm' passed in
+	"""
+	htab, fptree = build_fptree(data)
+	linked_nodes = []
+	node = htab[itm][-1]
+	while node != None:
+		node_route.append(node.name)
+		node = node.node_link
+	linked_nodes.append(itm)
+	return linked_nodes
 
 
 def item_freq1(itm):
@@ -138,7 +183,6 @@ def item_freq1a(itm):
 	c = IT.count()
 	fnx = lambda a: "{0}{1}".format(itm, next(c))
 	htab, fptree = build_fptree(data1)
-	
 	node = htab[itm][-1]
 	cnt = 0
 	while node != None:
@@ -213,8 +257,8 @@ def test_eval(input, expected):
 	(item_freq1("E"), (4, 4)),
 	(item_freq1("C"), (3, 3)),
 	])
-def test_item_freq1(input, expected):
-	assert (input) == expected
+def test1_item_freq1(input, expected):
+	assert input == expected
 
 
 @pytest.mark.parametrize("input,expected", [
@@ -224,16 +268,56 @@ def test_item_freq1(input, expected):
 	(item_freq1("E")[0]==item_freq1("E")[1], True),
 	(item_freq1("C")[0]==item_freq1("C")[1], True),
 	])
-def test_item_freq2(input, expected):
-	assert (input) == expected
+def test2_item_freq2(input, expected):
+	assert input == expected
 
-# htab, _ = FPG.config_fptree_builder(data1)
+# htab, _ = FPT.config_fptree_builder(data1)
 # @pytest.mark.paramaterize("input,expected",
 # 	[ eval("(item_freq1({0})[0]==item_freq1({0})[1], True)".format(k)) 
 # 		for k in htab.keys() ]
 # )
 # def test_item_freq2(input, expected):
 # 	assert (input) == expected
+
+@pytest.mark.parametrize("input,expected", [
+	(like_item_traversal1(data1, "A"), 1),
+	(like_item_traversal1(data1, "B"), 1),
+	(like_item_traversal1(data1, "C"), 1),
+	(like_item_traversal1(data1, "D"), 1),
+	(like_item_traversal1(data1, "E"), 1),
+	])
+def test2_like_item_traversal1(input, expected):
+	assert input == expected
+
+
+fnx = lambda nr: all(nr[0] == itm for itm in nr)
+@pytest.mark.parametrize("input,expected", [
+	(fnx(like_item_traversal2(data1, "A")), True),
+	(fnx(like_item_traversal2(data1, "B")), True),
+	(fnx(like_item_traversal2(data1, "C")), True),
+	(fnx(like_item_traversal2(data1, "D")), True),
+	(fnx(like_item_traversal2(data1, "E")), True),
+	])
+def test1_like_item_traversal2(input, expected):
+	assert input == expected
+
+
+# @pytest.mark.paramaterize("input,expected", [
+# 	(like_item_traversal2(data1, "A"), 1),
+# 	(like_item_traversal2(data1, "B"), 1),
+# 	(like_item_traversal2(data1, "C"), 1),
+# 	(like_item_traversal2(data1, "D"), 1),
+# 	(like_item_traversal2(data1, "E"), 1),
+# 	])
+# def test1_like_item_traversal2(input, expected):
+# 	assert input == expected
+
+
+
+def test1_like_item_traversal1():
+	assert like_item_traversal1(data1, 'A') == 1
+
+
 
 
 def test_item_freq():
