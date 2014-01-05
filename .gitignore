@@ -3,3 +3,4 @@
 .csv
 .json
 /data/*
+/ipython-notebooks/.ipynb_checkpoints/*
