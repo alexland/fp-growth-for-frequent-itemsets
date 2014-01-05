@@ -13,7 +13,7 @@
 # TODO: create variable to avoid repeated lookups for 'parent_node.children[itm]'
 # TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
 # TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
-
+# TODO: create a new table (like header table) that stores the terminus node for each route
 
 
 import collections as CL
@@ -62,7 +62,7 @@ def config_fptree_builder(data):
 	returns: header table & data for input to build_tree;
 	pass in: raw data (nested list of transactions);
 	"""
-	# data = [ set(trans) for trans in data ]
+	data = [ set(trans) for trans in data ]
 	# flatten the data (from list of sets to list of items)
 	trans_flat = [itm for trans in data for itm in trans]
 	# get frequency of each item
@@ -110,6 +110,9 @@ def add_nodes(trans, header_table, parent_node):
 	while len(trans) > 0:
 		itm = trans.pop(0)
 		# does this item appear in the same route?
+		# if so it will have to be upsteam & adjacent given how the items
+		# are sorted prior to tree building & given that the fp-tree is
+		# built from the top down
 		if itm in parent_node.children.keys():
 			parent_node.children[itm].incr()
 		else:
@@ -193,7 +196,39 @@ if __name__ == '__main__':
 # TODO: add frequency to 'frequent_items' so i can sort the results
 # TODO: get rid of 'min_spt' in place of something more appropriate
 
+#---------- to traverse a given route, upward toward root ------------#
+
+def ascend_route(node):
+	"""
+	returns: all nodes in a given route from the node passed in to the root
+	pass in: a single node in an fp-tree
+	"""
+	node_route = []
+	while node != None:
+	    node_route.append(node.name)
+	    node = node.parent
+	return node_route
+
+
+
+
 #---------- to traverse all instances of a given item ------------#
+
+def like_item_traversal(itm):
+	"""
+	returns:
+	pass in:
+	this is the counterpart fn to 'ascend_route' which traverses 
+	fptree upward; this fn does transverse traversal across
+	nodes of dthe same type
+	"""
+    linked_nodes = []
+    node = htab[itm][-1]
+    while node != None:
+        linked_nodes.append(node)
+        node = node.node_link
+    linked_nodes.append(itm)
+    return linked_nodes
 
 # eg, all of the 'A' nodes
 # (i) get the route origin from header_table; this is pointer to
@@ -264,7 +299,18 @@ if __name__ == '__main__':
 
 
 
+#--------------- traversal downward from root to find terminal nodes -----------#
 
+# terminal nodes have no children
+
+terminal_nodes_in_route = []
+for node in nodes:
+    while not len(node.children.keys()) == 0:
+		nodes = node.children
+	terminal_nodes_in_route.append(node)
+		
+		
+		
 
 
 
