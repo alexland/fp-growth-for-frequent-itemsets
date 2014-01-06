@@ -57,14 +57,42 @@ data = [
 #---------------------- building the fp-tree -----------------------#
 
 
-def config_fptree_builder(data):
+def remove_items_below_min_spt(transactions, item_counter, min_spt):
+		"""
+		returns: transactions w/ items whose frequency is < min_spt 
+		pass in: 
+			min_spt (float, eg, 0.03 means each item must appear in 
+			at least 3% of the transactions)
+		"""
+		# identify the (unique) items that fallow below min_spt
+		total = sum(item_counter.values())
+		ic = {k:v for k, v in item_counter.items() if (v/total) < min_spt}
+		# build the expression
+		excluded_items = list(ic.keys())
+		excluded_items_expr = []
+		str_templ = '(q=="{0}")'
+		for itm in excluded_items:
+		    excluded_items.append(str_templ.format(itm))
+		filter_str = " | ".join(excluded_items)
+		filter_str = " | ".join(excluded_items)
+		# remove those below threshold items from the transactions
+		tx = [IT.filterfalse(lambda q: eval(filter_str), trans) 
+				for trans in transactions]
+		return list(map(list, tx))
+
+
+
+def config_fptree_builder(transactions, min_spt=None):
 	"""
-	returns: header table & data for input to build_tree;
-	pass in: raw data (nested list of transactions);
+	returns: header table & transactions for input to build_tree;
+	pass in: 
+		raw data (nested list of transactions);
+		min_spt (float) fraction of total transactions in which an item
+			must appear to be included in the fptree
 	"""
-	data = [ set(trans) for trans in data ]
+	transactions = [ set(trans) for trans in transactions ]
 	# flatten the data (from list of sets to list of items)
-	trans_flat = [itm for trans in data for itm in trans]
+	trans_flat = [itm for trans in transactions for itm in trans]
 	# get frequency of each item
 	item_counter = CL.defaultdict(int)
 	for itm in trans_flat:
@@ -76,7 +104,7 @@ def config_fptree_builder(data):
 	ic = sorted(ic, key=itemgetter(1), reverse=True)
 	sort_key = {t[0]: i for i, t in enumerate(ic)}
 	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
-	transactions = map(fnx, data)
+	transactions = map(fnx, transactions)
 	# build header table from freq_items w/ empty placeholders for node pointer
 	htable = CL.defaultdict(list)
 	for k in item_counter.keys():
@@ -146,7 +174,7 @@ def build_fptree(transactions):
 	"""
 	fptree = TreeNode('root', None)
 	root = fptree
-	header_table, transactions = config_fptree_builder(data)
+	header_table, transactions = config_fptree_builder(transactions)
 	for trans in transactions:
 		add_nodes(trans, header_table, root)
 	header_table = {k:v[:2] for k, v in header_table.items()}
@@ -154,7 +182,7 @@ def build_fptree(transactions):
 
 
 def main():
-	build_fptree(data)
+	build_fptree(transactions)
 
 
 def fpt(tn):
@@ -222,13 +250,13 @@ def like_item_traversal(itm):
 	fptree upward; this fn does transverse traversal across
 	nodes of dthe same type
 	"""
-    linked_nodes = []
-    node = htab[itm][-1]
-    while node != None:
-        linked_nodes.append(node)
-        node = node.node_link
-    linked_nodes.append(itm)
-    return linked_nodes
+	linked_nodes = []
+	node = htab[itm][-1]
+	while node != None:
+		linked_nodes.append(node)
+		node = node.node_link
+	linked_nodes.append(itm)
+	return linked_nodes
 
 # eg, all of the 'A' nodes
 # (i) get the route origin from header_table; this is pointer to
@@ -303,11 +331,13 @@ def like_item_traversal(itm):
 
 # terminal nodes have no children
 
-terminal_nodes_in_route = []
-for node in nodes:
-    while not len(node.children.keys()) == 0:
-		nodes = node.children
-	terminal_nodes_in_route.append(node)
+
+# write this as a recursive function:
+# terminal_nodes_in_route = []
+# for node in nodes:
+# 	while not len(node.children.keys()) == 0:
+# 		nodes = node.children
+# 	terminal_nodes_in_route.append(node)
 		
 		
 		
