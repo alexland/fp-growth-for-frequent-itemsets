@@ -2,7 +2,7 @@
 
 import pytest
 
-pytest_plugins = "pytest-cov"
+# pytest_plugins = "pytest-cov"
 
 
 #------------------ content of test_strings.py ---------------#
