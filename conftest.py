@@ -2,6 +2,8 @@
 
 import pytest
 
+pytest_plugins = "pytest-cov"
+
 
 #------------------ content of test_strings.py ---------------#
 def test_compute(param1): 
