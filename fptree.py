@@ -56,6 +56,23 @@ data = [
 
 #---------------------- building the fp-tree -----------------------#
 
+
+def get_items_below_min_spt(dataset, item_counter, min_spt):
+	"""
+	returns: list of the unique items whose frequency over the entire
+		dataset is below some min_spt (float between 0 and 1, 
+		('decimal percent')
+	pass in: 
+		(i) dataset
+		(ii) dict w/ items for keys, values are item frequency;
+		(iii) min_spt (float, eg, 0.03 means each item must appear in 
+		at least 3% of the dataset);
+	"""
+	ic = {k:v for k, v in item_counter.items() if (v/len(dataset)) < min_spt}
+	return list(ic.keys())
+
+
+
 def filter_by_min_spt(dataset, item_counter, min_spt):
 		"""
 		returns: 
@@ -63,16 +80,14 @@ def filter_by_min_spt(dataset, item_counter, min_spt):
 			(ii) filtered item counter
 		pass in:
 			(i) dataset (the raw dataset);
-			(ii) dict w/ items for keys, values are frequency;
+			(ii) dict w/ items for keys, values are item frequency;
 			(iii) min_spt (float, eg, 0.03 means each item must appear in 
 			at least 3% of the dataset); 
 		removes any item from every transaction if that item's total freq
 		is below 'min_spt' 
 		"""
-		# identify the (unique) items that fallow below min_spt
-		total = sum([len(row) for row in dataset])
-		ic0 = {k:v for k, v in item_counter.items() if (v/total) < min_spt}
-		if not ic0:
+		low_feq_items = get_items_below_min_spt(item_counter, min_spt)
+		if not low_freq_items:
 			# if all items are above min_spt, ie, there are no items to exclude
 			# so just return original args
 			return dataset, item_counter
