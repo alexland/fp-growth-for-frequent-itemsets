@@ -1,6 +1,6 @@
 *.pyc
-.DS_Store
-.csv
-.json
+*.DS_Store
+*.csv
+*.jpg
 /data/*
 /ipython-notebooks/.ipynb_checkpoints/*
