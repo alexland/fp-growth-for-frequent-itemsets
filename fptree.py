@@ -56,47 +56,60 @@ data = [
 
 #---------------------- building the fp-tree -----------------------#
 
-
-def remove_items_below_min_spt(transactions, item_counter, min_spt):
+def filter_by_min_spt(dataset, item_counter, min_spt):
 		"""
-		returns: transactions w/ items whose frequency is < min_spt 
-		pass in: 
-			min_spt (float, eg, 0.03 means each item must appear in 
-			at least 3% of the transactions)
+		returns: 
+			(i) filterd dataset (remove items w/ freq < min_spt);
+			(ii) filtered item counter
+		pass in:
+			(i) dataset (the raw dataset);
+			(ii) dict w/ items for keys, values are frequency;
+			(iii) min_spt (float, eg, 0.03 means each item must appear in 
+			at least 3% of the dataset); 
+		removes any item from every transaction if that item's total freq
+		is below 'min_spt' 
 		"""
 		# identify the (unique) items that fallow below min_spt
-		total = sum(item_counter.values())
-		ic = {k:v for k, v in item_counter.items() if (v/total) < min_spt}
-		# build the expression
-		excluded_items = list(ic.keys())
-		excluded_items_expr = []
-		str_templ = '(q=="{0}")'
-		for itm in excluded_items:
-		    excluded_items.append(str_templ.format(itm))
-		filter_str = " | ".join(excluded_items)
-		filter_str = " | ".join(excluded_items)
-		# remove those below threshold items from the transactions
-		tx = [IT.filterfalse(lambda q: eval(filter_str), trans) 
-				for trans in transactions]
-		return list(map(list, tx))
+		total = sum([len(row) for row in dataset])
+		ic0 = {k:v for k, v in item_counter.items() if (v/total) < min_spt}
+		if not ic0:
+			# if all items are above min_spt, ie, there are no items to exclude
+			# so just return original args
+			return dataset, item_counter
+		else:
+			# there is at least one item to exclude
+			# build the expression
+			excluded_items = list(ic0.keys())
+			excluded_items_expr = []
+			str_templ = '(q=="{0}")'
+			for itm in excluded_items:
+			    excluded_items_expr.append(str_templ.format(itm))
+			filter_str = " | ".join(excluded_items_expr)
+			# remove those below threshold items from the dataset
+			tx = [IT.filterfalse(lambda q: eval(filter_str), trans) 
+					for trans in dataset]
+			ic = {k:v for k, v in item_counter.items() if (v/total) >= min_spt}
+			return list(map(list, tx)), ic
 
 
 
-def config_fptree_builder(transactions, min_spt=None):
+def config_fptree_builder(dataset, min_spt=None):
 	"""
-	returns: header table & transactions for input to build_tree;
+	returns: header table & dataset for input to build_tree;
 	pass in: 
-		raw data (nested list of transactions);
-		min_spt (float) fraction of total transactions in which an item
+		raw data (nested list of dataset);
+		min_spt (float) fraction of total dataset in which an item
 			must appear to be included in the fptree
 	"""
-	transactions = [ set(trans) for trans in transactions ]
+	dataset = [ set(trans) for trans in dataset ]
 	# flatten the data (from list of sets to list of items)
-	trans_flat = [itm for trans in transactions for itm in trans]
+	trans_flat = [itm for trans in dataset for itm in trans]
 	# get frequency of each item
 	item_counter = CL.defaultdict(int)
 	for itm in trans_flat:
 		item_counter[itm] += 1
+	if min_spt:
+		dataset, item_counter = filter_by_min_spt(dataset, item_counter, min_spt)
 	# to sort by decr frequency, then secondary (alpha) sort by key (incr),
 	# sort first by secondary key, then again by primary key
 	ic = sorted(((k, v) for k, v in item_counter.items()), 
@@ -104,12 +117,12 @@ def config_fptree_builder(transactions, min_spt=None):
 	ic = sorted(ic, key=itemgetter(1), reverse=True)
 	sort_key = {t[0]: i for i, t in enumerate(ic)}
 	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
-	transactions = map(fnx, transactions)
+	dataset = map(fnx, dataset)
 	# build header table from freq_items w/ empty placeholders for node pointer
 	htable = CL.defaultdict(list)
 	for k in item_counter.keys():
 	    htable[k].append(item_counter[k])
-	return htable, transactions
+	return htable, dataset
  
  
 class TreeNode:
@@ -163,26 +176,26 @@ def add_nodes(trans, header_table, parent_node):
 		add_nodes(trans, header_table, this_node)
 
 
-def build_fptree(transactions):
+def build_fptree(dataset, min_spt):
 	"""
 	pass in: 
-		raw data (list of transactions; one transcation per list)
+		raw data (list of dataset; one transcation per list)
 	returns: fptree;
-	instantiates fptree and builds it by calling 'add_node';
-	when called, bind result to 2 variables: one for thetree;
-	the second for for the header table;
+	the 'main' fn in this module; instantiates fptree and builds it
+	by calling 'add_node'; when called, bind result to 2 variables:
+	one for thetree; the second for for the header table;
 	"""
 	fptree = TreeNode('root', None)
 	root = fptree
-	header_table, transactions = config_fptree_builder(transactions)
-	for trans in transactions:
+	header_table, dataset = config_fptree_builder(dataset, min_spt)
+	for trans in dataset:
 		add_nodes(trans, header_table, root)
 	header_table = {k:v[:2] for k, v in header_table.items()}
 	return fptree, header_table
 
 
-def main():
-	build_fptree(transactions)
+def main(dataset, min_spt):
+	build_fptree(dataset, min_spt)
 
 
 def fpt(tn):
@@ -211,7 +224,7 @@ if __name__ == '__main__':
 		['B', 'C'],
 	 ]
 	 # returns complete fp-tree & header table
-	fptree, htab = main(data)
+	fptree, htab = main(data, 0.1)
 
 
 
