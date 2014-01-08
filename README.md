@@ -2,7 +2,7 @@
 to run the tests for this library:
 
 ```
-python runtests.py
+python3 runtests.py -v
 
 ```
 

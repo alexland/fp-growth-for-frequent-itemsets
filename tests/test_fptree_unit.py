@@ -48,14 +48,14 @@ data2 = [
 #------------------------- fixtures --------------------------------#
 
 def item_counter(dataset):
-	dataset = [ set(trans) for trans in dataset ]
+	dataset = [set(trans) for trans in dataset]
 	# flatten the data (from list of sets to list of items)
 	trans_flat = [itm for trans in dataset for itm in trans]
 	# get frequency of each item
-	item_counter = CL.defaultdict(int)
+	ic = CL.defaultdict(int)
 	for itm in trans_flat:
-		item_counter[itm] += 1
-	return item_counter
+		ic[itm] += 1
+	return ic
 
 
 #------------------------- test fns --------------------------------#
@@ -64,14 +64,36 @@ def item_counter(dataset):
 
 #------------------------- assertions --------------------------------#
 
-
-def test_fpt_get_items_below_min_spt:
-	assert FPT.get_items_below_min_spt(dataset, item_counter, min_spt) == ["C", "E"]
-
-
-
+def test_item_counter():
+	ic = FPT.item_counter(data1)
+	kx = sorted(list(ic.keys()))
+	assert kx == sorted(['B', 'C', 'A', 'D', 'E'])
 
 
+def test2_item_counter():
+	ic = FPT.item_counter(data1)
+	vx = sorted(list(ic.values()))
+	assert vx == sorted([6, 3, 5, 6, 4])
+
+
+# def test_get_items_below_min_spt():
+# 	item_count = item_counter(data1)
+# 	assert FPT.get_items_below_min_spt(data1, item_count, 
+# 		min_spt=0.55) == ["C", "E"]
+
+
+def test_build_min_spt_filter_str():
+	assert FPT.build_min_spt_filter_str(["A", "B"]) == '(q=="A") | (q=="B")'
+
+
+def test2_build_min_spt_filter_str():
+	assert FPT.build_min_spt_filter_str(["A"]) == '(q=="A")'
+
+
+def test3_build_min_spt_filter_str():
+	import string
+	excl_items = string.ascii_uppercase[:6]
+	assert FPT.build_min_spt_filter_str(excl_items) == '(q=="A") | (q=="B") | (q=="C") | (q=="D") | (q=="E") | (q=="F")'
 
 
 
