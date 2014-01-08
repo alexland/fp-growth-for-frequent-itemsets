@@ -57,7 +57,21 @@ data = [
 #---------------------- building the fp-tree -----------------------#
 
 
-def get_items_below_min_spt(dataset, item_counter, min_spt):
+def item_counter(dataset):
+	"""
+	returns: a dict w/ integer counts keyed to the unique items
+		comprising the transactions;
+	pass in: raw data (nested list);
+	"""
+	# flatten the data (from list of sets to list of items)
+	trans_flat = [itm for trans in dataset for itm in trans]
+	ic = CL.defaultdict(int)
+	for itm in trans_flat:
+		ic[itm] += 1
+	return ic
+
+
+def get_items_below_min_spt(dataset, item_count, min_spt):
 	"""
 	returns: list of the unique items whose frequency over the entire
 		dataset is below some min_spt (float between 0 and 1, 
@@ -67,43 +81,56 @@ def get_items_below_min_spt(dataset, item_counter, min_spt):
 		(ii) dict w/ items for keys, values are item frequency;
 		(iii) min_spt (float, eg, 0.03 means each item must appear in 
 		at least 3% of the dataset);
+	calls 'item_counter'
 	"""
-	ic = {k:v for k, v in item_counter.items() if (v/len(dataset)) < min_spt}
+	ic = {k:v for k, v in item_count.items() if (v/len(dataset)) < min_spt}
 	return list(ic.keys())
 
 
+def build_min_spt_filter_str(excluded_items):
+	"""
+	returns: a str which, when 'eval' is called on it, is a
+		a valid arg for 'IT.filterfalse' which is used in
+		'filter_by_min_spt' to remove items below min_spt
+	pass in: list of excluded items (returned by
+		 'get_items_below_min_spt')
+	"""
+	excluded_items_expr = []
+	str_templ = '(q=="{0}")'
+	for itm in excluded_items:
+	    excluded_items_expr.append(str_templ.format(itm))
+	return " | ".join(excluded_items_expr)
 
-def filter_by_min_spt(dataset, item_counter, min_spt):
+
+
+def filter_by_min_spt(dataset, item_count, min_spt):
 		"""
 		returns: 
 			(i) filterd dataset (remove items w/ freq < min_spt);
 			(ii) filtered item counter
 		pass in:
 			(i) dataset (the raw dataset);
-			(ii) dict w/ items for keys, values are item frequency;
+			(ii) dict w/ items for keys, values are item frequency,
+				returned by call to 'item_counter';
 			(iii) min_spt (float, eg, 0.03 means each item must appear in 
 			at least 3% of the dataset); 
 		removes any item from every transaction if that item's total freq
 		is below 'min_spt' 
 		"""
-		low_feq_items = get_items_below_min_spt(item_counter, min_spt)
-		if not low_freq_items:
+		excluded_items = get_items_below_min_spt(item_count, min_spt)
+		if not excluded_items:
 			# if all items are above min_spt, ie, there are no items to exclude
 			# so just return original args
-			return dataset, item_counter
+			return dataset, item_count
 		else:
 			# there is at least one item to exclude
-			# build the expression
-			excluded_items = list(ic0.keys())
-			excluded_items_expr = []
-			str_templ = '(q=="{0}")'
-			for itm in excluded_items:
-			    excluded_items_expr.append(str_templ.format(itm))
-			filter_str = " | ".join(excluded_items_expr)
+			# now build the expression required by 'IT.filterfalse' from the
+			# list of excluded items
+			filter_str = build_min_spt_filter_str(excluded_items)
 			# remove those below threshold items from the dataset
 			tx = [IT.filterfalse(lambda q: eval(filter_str), trans) 
 					for trans in dataset]
-			ic = {k:v for k, v in item_counter.items() if (v/total) >= min_spt}
+			ic = {k:v for k, v in item_count.items() if (v/total) >= min_spt}
 			return list(map(list, tx)), ic
 
 
@@ -117,17 +144,13 @@ def config_fptree_builder(dataset, min_spt=None):
 			must appear to be included in the fptree
 	"""
 	dataset = [ set(trans) for trans in dataset ]
-	# flatten the data (from list of sets to list of items)
-	trans_flat = [itm for trans in dataset for itm in trans]
-	# get frequency of each item
-	item_counter = CL.defaultdict(int)
-	for itm in trans_flat:
-		item_counter[itm] += 1
+	item_count = item_counter(dataset)
+	
 	if min_spt:
-		dataset, item_counter = filter_by_min_spt(dataset, item_counter, min_spt)
+		dataset, item_count = filter_by_min_spt(dataset, item_count, min_spt)
 	# to sort by decr frequency, then secondary (alpha) sort by key (incr),
 	# sort first by secondary key, then again by primary key
-	ic = sorted(((k, v) for k, v in item_counter.items()), 
+	ic = sorted(((k, v) for k, v in item_count.items()), 
 		key=itemgetter(0))
 	ic = sorted(ic, key=itemgetter(1), reverse=True)
 	sort_key = {t[0]: i for i, t in enumerate(ic)}
@@ -135,8 +158,8 @@ def config_fptree_builder(dataset, min_spt=None):
 	dataset = map(fnx, dataset)
 	# build header table from freq_items w/ empty placeholders for node pointer
 	htable = CL.defaultdict(list)
-	for k in item_counter.keys():
-	    htable[k].append(item_counter[k])
+	for k in item_count.keys():
+	    htable[k].append(item_count[k])
 	return htable, dataset
  
  
