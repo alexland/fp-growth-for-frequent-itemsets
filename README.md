@@ -26,3 +26,11 @@ by nodes of the same type within a single fptree.
 	 a conditional fp-tree
 
 * _**conditional pattern base**_: collection of prefix paths
+
+
+2 key (novel) elements of this FP-Growth implementation:
+
+	(i) can be queried in a natural way for user-clickstream analytics, e.g.,
+		which page is a user most often likely to visit given an immediate prior path?
+
+	(ii) along with min support, includes a filter for minimum sequence length
