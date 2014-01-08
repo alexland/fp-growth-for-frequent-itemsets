@@ -92,8 +92,22 @@ def get_conditional_pattern_bases(htab, itm, string_repr=False):
 	return cpb_all
 	
 	
-	
-	
-	
-	
+
+def f_list(itm, min_spt, trans_count):
+	"""
+	returns: a dict whose keys are unique items and whose values are
+		the count in the cpbs for this item
+	pass in: 
+		(i) one unique item in transactions (str)
+		(ii) min_spt (float);
+		(iii) transaction count (number of transactions)
+	this fn first calculates cond ptn bases for the item passed in via
+	'get_conditional_pattern_bases', then calculates f-list'
+	"""
+	cond_ptn_bases = get_conditional_pattern_bases(htab, itm, string_repr=True)
+	item_count = FPT.item_counter(cond_ptn_bases)
+	x, _ = FPT.filter_by_min_spt(cond_ptn_bases, item_count, min_spt, trans_count)
+	return FPT.item_counter(x)
+
+
 	
