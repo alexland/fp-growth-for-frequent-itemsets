@@ -214,7 +214,7 @@ def add_nodes(trans, header_table, parent_node):
 		add_nodes(trans, header_table, this_node)
 
 
-def build_fptree(dataset, min_spt):
+def build_fptree(dataset, min_spt=None):
 	"""
 	pass in: 
 		raw data (list of dataset; one transcation per list)
