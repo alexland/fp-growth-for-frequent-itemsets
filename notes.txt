@@ -1,7 +1,0 @@
-
-> 2 key (novel) elements of my fp-tree implementation:
-
-	(i) it can be queried in a natural way for user-clickstream analytics, e.g.,
-		which page is a user most often likely to visit given an immediate prior path?
-
-	(ii) along with min support, add a filter for minimum sequence length
