@@ -14,11 +14,12 @@
 # TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
 # TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
 # TODO: create a new table (like header table) that stores the terminus node for each route
+# TODO: a few of these fns i think are memoizable
 
 
 import collections as CL
 from operator import itemgetter
-from functools import partial
+import functools as FT
 import itertools as IT
 
 
@@ -29,7 +30,7 @@ import itertools as IT
 # 	pdata = [ line.strip().split() for line in fh.readlines() ]
 
 
-data = [
+dataset = [
 	['C', 'A', 'T', 'S'],
 	['C', 'A', 'T', 'S', 'U', 'P'],
 	['C', 'A', 'T'],
@@ -59,8 +60,8 @@ data = [
 
 def item_counter(dataset):
 	"""
-	returns: a dict w/ integer counts keyed to the unique items
-		comprising the transactions;
+	returns: a dict whose keys are the unique items comprising the 
+		transactions & whose values are the integer counts;
 	pass in: raw data (nested list);
 	"""
 	# flatten the data (from list of sets to list of items)
@@ -71,9 +72,9 @@ def item_counter(dataset):
 	return ic
 
 
-def get_items_below_min_spt(dataset, item_count, min_spt):
+def get_items_below_min_spt(dataset, item_count, min_spt, trans_count):
 	"""
-	returns: list of the unique items whose frequency over the entire
+	returns: list of the unique items whose frequency over the
 		dataset is below some min_spt (float between 0 and 1, 
 		('decimal percent')
 	pass in: 
@@ -83,7 +84,7 @@ def get_items_below_min_spt(dataset, item_count, min_spt):
 		at least 3% of the dataset);
 	calls 'item_counter'
 	"""
-	ic = {k:v for k, v in item_count.items() if (v/len(dataset)) < min_spt}
+	ic = {k:v for k, v in item_count.items() if (v/trans_count) < min_spt}
 	return list(ic.keys())
 
 
@@ -102,8 +103,7 @@ def build_min_spt_filter_str(excluded_items):
 	return " | ".join(excluded_items_expr)
 
 
-
-def filter_by_min_spt(dataset, item_count, min_spt):
+def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 		"""
 		returns: 
 			(i) filterd dataset (remove items w/ freq < min_spt);
@@ -114,10 +114,14 @@ def filter_by_min_spt(dataset, item_count, min_spt):
 				returned by call to 'item_counter';
 			(iii) min_spt (float, eg, 0.03 means each item must appear in 
 			at least 3% of the dataset); 
+			(iv) total number of transactions
 		removes any item from every transaction if that item's total freq
-		is below 'min_spt' 
+		is below 'min_spt';
+		to call this fn, bind the call to two variables, like so:
+		filtered_trans, item_count_dict = filter_by_min_spt(...)
 		"""
-		excluded_items = get_items_below_min_spt(item_count, min_spt)
+		excluded_items = get_items_below_min_spt(dataset, item_count, 
+			min_spt, trans_count)
 		if not excluded_items:
 			# if all items are above min_spt, ie, there are no items to exclude
 			# so just return original args
@@ -127,12 +131,11 @@ def filter_by_min_spt(dataset, item_count, min_spt):
 			# now build the expression required by 'IT.filterfalse' from the
 			# list of excluded items
 			filter_str = build_min_spt_filter_str(excluded_items)
-			# remove those below threshold items from the dataset
+			# remove those items below min_spt threshold items
 			tx = [IT.filterfalse(lambda q: eval(filter_str), trans) 
 					for trans in dataset]
-			ic = {k:v for k, v in item_count.items() if (v/total) >= min_spt}
+			ic = {k:v for k, v in item_count.items() if (v/trans_count) >= min_spt}
 			return list(map(list, tx)), ic
-
 
 
 def config_fptree_builder(dataset, min_spt=None):
