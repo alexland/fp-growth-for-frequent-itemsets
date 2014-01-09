@@ -250,11 +250,6 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	return fptree, header_table
 
 
-def main(dataset, min_spt):
-	trans_count = len(dataset)
-	build_fptree(dataset, min_spt, trans_count)
-
-
 def fpt(tn):
 	"""
 	returns: None;
@@ -270,18 +265,10 @@ def fpt(tn):
 
 # these need to be in this module's namespace so i can use them in
 # fptree_query
-fptree, htab = build_fptree(dataset1, len(dataset1))
+fptree, htab = build_fptree(dataset=dataset1, trans_count=len(dataset1))
 
 if __name__ == '__main__':
 	
 	# returns complete fp-tree & header table
-	fptree, htab = main(dataset1, min_spt=0.3)
-
-
-
-
-
-
-
-
+	fptree, htab = build_fptree(dataset=dataset1, trans_count=len(dataset1))
 

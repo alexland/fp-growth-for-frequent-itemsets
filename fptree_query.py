@@ -86,7 +86,7 @@ def get_conditional_pattern_bases(item, header_table=FPT.htab, string_repr=False
 	steps: (i) remove start & terminus (ii) reverse;
 	"""
 	cpb_all = []
-	linked_nodes = like_item_traversal(header_table, item)
+	linked_nodes = like_item_traversal(item, header_table)
 	for node in linked_nodes.values():
 		# if the nodes are ponters rather than strings
 		route = ascend_route(node, string_repr=string_repr)
@@ -123,17 +123,16 @@ def f_list(item, header_table, min_spt, trans_count):
 	return cpb_all_filtered, FPT.item_counter(cpb_all_filtered)
 
 
-def build_conditional_fptree(item, min_spt, cpb_all_filtered, trans_count):
+def build_conditional_fptree(item, min_spt, trans_count, header_table=FPT.htab):
 	"""
 	returns: conditional fptree (for a given unique transaction item)
 	pass in: 
-		(i) one unique item in transactions (str);
-		(ii) all conditional pattern bases for a the item passed in,
-		as returned by 'get_conditional_pattern_bases' and filterd by
-		'f_list'
+		(i) one unique item in transactions (str)
+		(ii) minimum support (float)
+		(iii) count of transactions in initial dataset;
 	this fn is a thin wrapper over 'build_fptree'
 	"""
-	cpb_all_filtered, _ = f_list(item, trans_count, min_spt, header_table=FPT.htab) 
+	cpb_all_filtered, _ = f_list(item, min_spt, trans_count, header_table) 
 	cond_fptree, _ = FPT.build_fptree(dataset=cpb_all_filtered, 
 						root_node_name=item)
 	return cond_fptree

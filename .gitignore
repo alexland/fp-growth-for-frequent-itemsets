@@ -4,3 +4,4 @@
 *.jpg
 /data/*
 /ipython-notebooks/.ipynb_checkpoints/*
+/__pycache__/*
