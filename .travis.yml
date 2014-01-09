@@ -8,4 +8,4 @@ install:
     - pip install -r requirements.txt --use-mirrors
 # run tests
 script:
-    - runtests.py
+    - python3 runtests.py
