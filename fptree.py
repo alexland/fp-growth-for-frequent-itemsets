@@ -5,12 +5,9 @@
 """
 
 # TODO: refactor, where appropriate, comprehensions as generator expressions
-# FIXME: min_spt doesn't make sense for my use cases
-# TODO: add min support
-
 # TODO: make build_tree a partial so 'htab' doesn't have to passed in
 # TODO: above: add_nodes_ = partial(add_nodes, header_table=header_table)
-# TODO: create variable to avoid repeated lookups for 'parent_node.children[itm]'
+# TODO: create variable to avoid repeated lookups for 'parent_node.children[item]'
 # TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
 # TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
 # TODO: create a new table (like header table) that stores the terminus node for each route
@@ -30,7 +27,19 @@ import itertools as IT
 # 	pdata = [ line.strip().split() for line in fh.readlines() ]
 
 
-dataset = [
+dataset1 = [
+	['E', 'B', 'D', 'A'],
+	['E', 'A', 'D', 'C', 'B'],
+	['C', 'E', 'B', 'A'],
+	['A', 'B', 'D'],
+	['D'],
+	['D', 'B'],
+	['D', 'A', 'E'],
+	['B', 'C'],
+]
+
+
+dataset2 = [
 	['C', 'A', 'T', 'S'],
 	['C', 'A', 'T', 'S', 'U', 'P'],
 	['C', 'A', 'T'],
@@ -65,10 +74,10 @@ def item_counter(dataset):
 	pass in: raw data (nested list);
 	"""
 	# flatten the data (from list of sets to list of items)
-	trans_flat = [itm for trans in dataset for itm in trans]
+	trans_flat = [item for trans in dataset for item in trans]
 	ic = CL.defaultdict(int)
-	for itm in trans_flat:
-		ic[itm] += 1
+	for item in trans_flat:
+		ic[item] += 1
 	return ic
 
 
@@ -98,8 +107,8 @@ def build_min_spt_filter_str(excluded_items):
 	"""
 	excluded_items_expr = []
 	str_templ = '(q=="{0}")'
-	for itm in excluded_items:
-	    excluded_items_expr.append(str_templ.format(itm))
+	for item in excluded_items:
+	    excluded_items_expr.append(str_templ.format(item))
 	return " | ".join(excluded_items_expr)
 
 
@@ -138,19 +147,21 @@ def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 			return list(map(list, tx)), ic
 
 
-def config_fptree_builder(dataset, min_spt=None):
+def config_fptree_builder(dataset, trans_count, min_spt=None):
 	"""
 	returns: header table & dataset for input to build_tree;
 	pass in: 
-		raw data (nested list of dataset);
-		min_spt (float) fraction of total dataset in which an item
+		(i) raw data (nested list of dataset);
+		(ii) transaction count (length of original dataset)
+		(iii) min_spt (float) fraction of total dataset in which an item
 			must appear to be included in the fptree
 	"""
 	dataset = [ set(trans) for trans in dataset ]
 	item_count = item_counter(dataset)
 	
 	if min_spt:
-		dataset, item_count = filter_by_min_spt(dataset, item_count, min_spt)
+		dataset, item_count = filter_by_min_spt(dataset, item_count, 
+								trans_count, min_spt)
 	# to sort by decr frequency, then secondary (alpha) sort by key (incr),
 	# sort first by secondary key, then again by primary key
 	ic = sorted(((k, v) for k, v in item_count.items()), 
@@ -190,45 +201,49 @@ def add_nodes(trans, header_table, parent_node):
 		and updates the companion header table 
 	"""
 	while len(trans) > 0:
-		itm = trans.pop(0)
+		item = trans.pop(0)
 		# does this item appear in the same route?
 		# if so it will have to be upsteam & adjacent given how the items
 		# are sorted prior to tree building & given that the fp-tree is
 		# built from the top down
-		if itm in parent_node.children.keys():
-			parent_node.children[itm].incr()
+		if item in parent_node.children.keys():
+			parent_node.children[item].incr()
 		else:
 			# create the node & add it to the tree
-			parent_node.children[itm] = TreeNode(itm, parent_node)
-			this_node = parent_node.children[itm]
+			parent_node.children[item] = TreeNode(item, parent_node)
+			this_node = parent_node.children[item]
 			try:
-				# is there at least one node pointer for this itm 
+				# is there at least one node pointer for this item 
 				# in the header table?
 				# ie, does this item appear in another route, or
-				header_table[itm][1]
+				header_table[item][1]
 				# if so:
-				header_table[itm][-1].node_link = this_node
-				header_table[itm].append(this_node)
+				header_table[item][-1].node_link = this_node
+				header_table[item].append(this_node)
 			except IndexError:
-				# this is the 1st time this itm is seen by this fn
+				# this is the 1st time this item is seen by this fn
 				# ie, no node pointer for this item in h/t, so add it
-				header_table[itm].append(this_node)
-		this_node = parent_node.children[itm]
+				header_table[item].append(this_node)
+		this_node = parent_node.children[item]
 		add_nodes(trans, header_table, this_node)
 
 
-def build_fptree(dataset, min_spt=None):
+def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	"""
 	pass in: 
-		raw data (list of dataset; one transcation per list)
+		(i) raw data (list of dataset; one transcation per list)
+		(ii) transaction count in original dataset;
+		(iii) minimum support (0=<min_spt>1)
+		(iv) name of root node (str)
 	returns: fptree;
 	the 'main' fn in this module; instantiates fptree and builds it
 	by calling 'add_node'; when called, bind result to 2 variables:
 	one for thetree; the second for for the header table;
 	"""
-	fptree = TreeNode('root', None)
+	fptree = TreeNode(root_node_name, None)
 	root = fptree
-	header_table, dataset = config_fptree_builder(dataset, min_spt)
+	header_table, dataset = config_fptree_builder(dataset, trans_count, 
+								min_spt)
 	for trans in dataset:
 		add_nodes(trans, header_table, root)
 	header_table = {k:v[:2] for k, v in header_table.items()}
@@ -236,14 +251,15 @@ def build_fptree(dataset, min_spt=None):
 
 
 def main(dataset, min_spt):
-	build_fptree(dataset, min_spt)
+	trans_count = len(dataset)
+	build_fptree(dataset, min_spt, trans_count)
 
 
 def fpt(tn):
 	"""
 	returns: None;
 	pass in: an fptree node;
-	convenience funciton for informal, node-by-node introspection
+	convenience function for informal, node-by-node introspection
 	of the fptree object; call unbound to variable
 	"""
 	print("count: {0}".format(tn.count))
@@ -252,149 +268,18 @@ def fpt(tn):
 	print("parent: {0}".format(tn.parent.name))
 
 
+# these need to be in this module's namespace so i can use them in
+# fptree_query
+fptree, htab = build_fptree(dataset1, len(dataset1))
+
 if __name__ == '__main__':
 	
-	data = [
-		['E', 'B', 'D', 'A'],
-		['E', 'A', 'D', 'C', 'B'],
-		['C', 'E', 'B', 'A'],
-		['A', 'B', 'D'],
-		['D'],
-		['D', 'B'],
-		['D', 'A', 'E'],
-		['B', 'C'],
-	 ]
-	 # returns complete fp-tree & header table
-	fptree, htab = main(data, 0.1)
-
-
-
-#---------------------- querying the fp-tree -----------------------#
-
-# TODO: if 2 items have same freq, sort by alpha/numeric order
-# TODO: eliminate the "sort header table" from mineTree
-# TODO: to exemplary queries below, add frequency (refactor mineTree)
-# TODO: refactor variable names: distinguish: 'itm' to itmset and 'itm to itm
-# TODO: add frequency to 'frequent_items' so i can sort the results
-# TODO: get rid of 'min_spt' in place of something more appropriate
-
-#---------- to traverse a given route, upward toward root ------------#
-
-def ascend_route(node):
-	"""
-	returns: all nodes in a given route from the node passed in to the root
-	pass in: a single node in an fp-tree
-	"""
-	node_route = []
-	while node != None:
-	    node_route.append(node.name)
-	    node = node.parent
-	return node_route
+	# returns complete fp-tree & header table
+	fptree, htab = main(dataset1, min_spt=0.3)
 
 
 
 
-#---------- to traverse all instances of a given item ------------#
-
-def like_item_traversal(itm):
-	"""
-	returns:
-	pass in:
-	this is the counterpart fn to 'ascend_route' which traverses 
-	fptree upward; this fn does transverse traversal across
-	nodes of dthe same type
-	"""
-	linked_nodes = []
-	node = htab[itm][-1]
-	while node != None:
-		linked_nodes.append(node)
-		node = node.node_link
-	linked_nodes.append(itm)
-	return linked_nodes
-
-# eg, all of the 'A' nodes
-# (i) get the route origin from header_table; this is pointer to
-	# node representing 1st instance of 'A'
-# A1 = header_table['A'][-1]
-# (ii) now bind this node's 'node_link' attribute to a variable
-	# that represents the 2nd instance of A, first testing for 
-	# node_link attribute (if none then only one instance of that itm)
-# if A1.node_link != None:
-	
-	# A2 = A1.node_link
-
-# (iii) repeat step 2 until, eg,
-	# A3 = A2.node_link
-
-
-# frequent_items = [] 
-# mineTree(fptree, htab, min_spt, set([]), frequent_items)
-
-# step 1: # list comprised of just freq items inv sorted by their frequencies
-# hx = { k:v[0] for k, v in htable.items() }
-# fi = [itm[0] for itm in sorted(hx.items(), key=itemgetter(1))]
-
-# sort and coerce to intergers (vs str)
-# frequent_items = sorted([ list(map(int, sorted(x))) for x in frequent_items ])
-
-#----- exemplary query I: what are the most frequent pairs: ----#
-# frequent_pairs = [ x for x in frequent_items if len(x) == 2 ]
-	 
-	
-#----- exemplary query II: given an item, recommend another item
-
-# eg, given "11", or [6, 4], recommend other items:
-
-# predicate
-# pd = 11
-
-# predicate
-# pd = 'cat'
-# express as set:
-# pd = {ch for ch in 'cat'}
-
-
-# if the predicate is a multi-item sequence (list)
-# res = filter(lambda q: pd < q, frequent_items)
-# OR
-# fi0 = [ itm for itm in frequent_items if pd < itm ]
-
-
-# now remove the predicate from res:
-
-# remove_predicate = lambda q: q ^ pd
-
-# res = map(remove_predicate, fi0)
-
-# nested set to a flat list
-# res = [itm for t in res for itm in t ]
-
-
-# if predicate is single item (int)
-# res = filter(lambda q: pd in q, frequent_items)
-
-# now remove the predicate from the patterns returned
-# for lx in res:
-#     lx.remove(11)
-# res = [ lx for lx in res if not len(lx) == 0 ]
-# res = {itm for lx in res for itm in lx}
-
-
-
-#--------------- traversal downward from root to find terminal nodes -----------#
-
-# terminal nodes have no children
-
-
-# write this as a recursive function:
-# terminal_nodes_in_route = []
-# for node in nodes:
-# 	while not len(node.children.keys()) == 0:
-# 		nodes = node.children
-# 	terminal_nodes_in_route.append(node)
-		
-		
-		
 
 
 
