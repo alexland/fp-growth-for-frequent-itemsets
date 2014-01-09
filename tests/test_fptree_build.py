@@ -89,7 +89,7 @@ def items_frequency(data):
 def build_fptree(data):
 	fptree = FPT.TreeNode('root', None)
 	root = fptree
-	htab, transactions = FPT.config_fptree_builder(data)
+	htab, transactions = FPT.config_fptree_builder(data, len(data))
 	for trans in transactions:
 		FPT.add_nodes(trans, htab, root)
 	htab = {k:v[:2] for k, v in htab.items()}
