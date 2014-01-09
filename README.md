@@ -1,3 +1,9 @@
+FP-Growth: compact storage & very fast retrieval of frequent item sets
+=======================
+
+[![Build Status](https://travis-ci.org/alexland/fp-growth-for-frequent-itemsets.png?branch=master)](https://travis-ci.org/alexland/fp-growth-for-frequent-itemsets)
+
+-----
 
 to run the tests for this library:
 
