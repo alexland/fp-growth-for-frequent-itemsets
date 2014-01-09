@@ -115,8 +115,8 @@ def f_list(item, header_table, min_spt, trans_count):
 	this fn first calculates cond ptn bases for the item passed in via
 	'get_conditional_pattern_bases', then calculates f-list'
 	"""
-	cond_ptn_bases = get_conditional_pattern_bases(header_table, item, 
-		string_repr=True)
+	cond_ptn_bases = get_conditional_pattern_bases(item, header_table, 
+						string_repr=True)
 	item_count = FPT.item_counter(cond_ptn_bases)
 	cpb_all_filtered, _ = FPT.filter_by_min_spt(cond_ptn_bases, item_count, min_spt, 
 		trans_count)
