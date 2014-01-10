@@ -12,7 +12,8 @@
 # TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
 # TODO: create a new table (like header table) that stores the terminus node for each route
 # TODO: a few of these fns i think are memoizable
-# TODO: clean up handling of duplicate items w/in a transaction
+# TODO: *** clean up handling of duplicate items w/in a transaction
+# TODO: *** create tests for duplicate items in trans
 
 
 
@@ -37,6 +38,17 @@ data = [
 	['D', 'B'],
 	['D', 'A', 'E'],
 	['B', 'C'],
+]
+
+data1 = [
+	['B', 'D', 'E', 'A', 'E'],
+	['B', 'D', 'A', 'A', 'E', 'C'],
+	['B', 'A', 'C', 'E', 'C'],
+	['B', 'D', 'A', 'B'],
+	['D'],
+	['B', 'D', 'B'],
+	['D', 'A', 'E', 'A', 'A'],
+	['B', 'C', 'C', 'C', 'C']
 ]
 
 
@@ -189,7 +201,8 @@ def reorder_items(dataset, sort_key=get_sort_key(data)):
 
 def config_fptree_builder(dataset, trans_count, min_spt=None):
 	"""
-	returns: header table & sorted dataset for input to build_tree;
+	returns: header table & sorted dataset for input to build_tree
+		(latter returned as generator)
 	pass in: 
 		(i) raw data (nested list of dataset);
 		(ii) transaction count (length of original dataset)
@@ -197,7 +210,7 @@ def config_fptree_builder(dataset, trans_count, min_spt=None):
 		(iv) min_spt (float) fraction of total dataset in which an item
 			must appear to be included in the fptree
 	"""
-	dataset = [ set(trans) for trans in dataset ]
+	# dataset = [ set(trans) for trans in dataset ]
 	item_count = item_counter(dataset)
 	if min_spt:
 		dataset, item_count = filter_by_min_spt(dataset, item_count, 
@@ -239,8 +252,12 @@ def add_nodes(trans, header_table, parent_node):
 		# if so it will have to be upsteam & adjacent given how the items
 		# are sorted prior to tree building & given that the fp-tree is
 		# built from the top down
-		if item in parent_node.children.keys():
-			parent_node.children[item].incr()
+		# if item in parent_node.children.keys():
+			# parent_node.children[item].incr()
+		if item == parent_node.name:
+			parent_node.incr()
+			add_nodes(trans, header_table, parent_node)
+			
 		else:
 			# create the node & add it to the tree
 			parent_node.children[item] = TreeNode(item, parent_node)
@@ -257,8 +274,8 @@ def add_nodes(trans, header_table, parent_node):
 				# this is the 1st time this item is seen by this fn
 				# ie, no node pointer for this item in h/t, so add it
 				header_table[item].append(this_node)
-		this_node = parent_node.children[item]
-		add_nodes(trans, header_table, this_node)
+			# this_node = parent_node.children[item]
+			add_nodes(trans, header_table, this_node)
 
 
 def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
@@ -298,10 +315,10 @@ def fpt(tn):
 
 # these need to be in this module's namespace so i can use them in
 # fptree_query
-fptree, htab = build_fptree(dataset=data, trans_count=len(data))
+fptree, htab = build_fptree(dataset=data1, trans_count=len(data1))
 
 if __name__ == '__main__':
 	
 	# returns complete fp-tree & header table
-	fptree, htab = build_fptree(dataset=data, trans_count=len(data))
+	fptree, htab = build_fptree(dataset=data1, trans_count=len(data1))
 
