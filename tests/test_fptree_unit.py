@@ -147,7 +147,7 @@ def test2_f_list():
 	min_spt = 0.3
 	item = "C"
 	_, htab = build_fptree(data1)
-	_, flist= FPQ.f_list(item, htab, min_spt, trans_count)
+	_, flist= FPQ.filter_cpbs_by_flist(item, min_spt, trans_count, htab)
 	assert list(flist.values())[0] == 3
 
 
@@ -156,7 +156,7 @@ def test3_f_list():
 	min_spt = 0.3
 	item = "C"
 	_, htab = build_fptree(data1)
-	_, flist = FPQ.f_list(item, htab, min_spt, trans_count)
+	_, flist = FPQ.filter_cpbs_by_flist(item, min_spt, trans_count, htab)
 	assert list(flist.keys())[0] == 'B'
 
 
