@@ -6,8 +6,11 @@ steps to query fp-tree:
 	for a given item (any atomic element comprising the transactions):
 		
 		(i) 	get conditional pattern bases;
-		(ii) 	get F-list
-		(iii) 	build conditional fp-tree 
+		(ii) 	get F-list 
+		(iii)	filter cpb against F-list (by min_spt)
+		(iv)	sort each cpb by item frequency
+		(v) 	build conditional fp-tree
+		(vi)	place results in container for fast, intuitive retrieval
 
 """
 
@@ -101,7 +104,7 @@ def get_conditional_pattern_bases(item, header_table=FPT.htab, string_repr=False
 	return cpb_all
 	
 
-def f_list(item, header_table, min_spt, trans_count):
+def filter_cpbs_by_flist(item, min_spt, trans_count, header_table=FPT.htab):
 	"""
 	returns: 
 		(i) a dict whose keys are unique items and whose 
@@ -123,23 +126,41 @@ def f_list(item, header_table, min_spt, trans_count):
 	return cpb_all_filtered, FPT.item_counter(cpb_all_filtered)
 
 
-def build_conditional_fptree(item, min_spt, trans_count, header_table=FPT.htab):
+def sort_cpbs_by_freq(cpb_all, dataset):
+	"""
+	returns: conditional pattern bases (list of lists) each re-orderdered
+		by item frequency in original dataset
+	pass in:
+		(i) conditional pattern bases (list of lists);
+		(ii) original dataset
+	"""
+	return reorder_items(cpb_all, sort_key=get_sort_key(dataset))
+
+
+
+def build_conditional_fptree(dataset, item, min_spt, trans_count, header_table=FPT.htab):
 	"""
 	returns: conditional fptree (for a given unique transaction item)
 	pass in: 
-		(i) one unique item in transactions (str)
-		(ii) minimum support (float)
-		(iii) count of transactions in initial dataset;
+		(i) original datset
+		(ii) one unique item in transactions (str)
+		(iii) minimum support (float)
+		(iv) count of transactions in initial dataset;
 	this fn is a thin wrapper over 'build_fptree'
 	"""
-	cpb_all_filtered, _ = f_list(item, min_spt, trans_count, header_table) 
+	cpb_all_filtered, _ = filter_cpbs_by_flist(item, min_spt, trans_count, header_table) 
+	cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all_filtered, dataset)
+	
+	
 	cond_fptree, _ = FPT.build_fptree(dataset=cpb_all_filtered, 
 						root_node_name=item)
 	return cond_fptree
 	
 	
 
-
+# so for each unique item, which i can get from 'htab.keys()':
+	# call 'build_conditional_fptree'
+	# extract the frequent patterns from the tree (along w/ counts to sort them)
 
 
 
