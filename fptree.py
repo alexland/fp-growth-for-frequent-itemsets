@@ -4,7 +4,7 @@
 
 """
 
-# TODO: refactor, where appropriate, comprehensions as generator expressions
+# TODO: refactor comprehensions as gen exp (check for 'list' calls)
 # TODO: make build_tree a partial so 'htab' doesn't have to passed in
 # TODO: above: add_nodes_ = partial(add_nodes, header_table=header_table)
 # TODO: create variable to avoid repeated lookups for 'parent_node.children[item]'
@@ -12,6 +12,8 @@
 # TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
 # TODO: create a new table (like header table) that stores the terminus node for each route
 # TODO: a few of these fns i think are memoizable
+# TODO: clean up handling of duplicate items w/in a transaction
+
 
 
 import collections as CL
@@ -25,6 +27,18 @@ import itertools as IT
 # dfile = "/Users/dougybarbo/Projects/data-pipeline-II/kosarak.dat"
 # with open(dfile, "r", encoding="utf-8") as fh:
 # 	pdata = [ line.strip().split() for line in fh.readlines() ]
+
+data = [
+	['E', 'B', 'D', 'A'],
+	['E', 'A', 'D', 'C', 'B'],
+	['C', 'E', 'B', 'A'],
+	['A', 'B', 'D'],
+	['D'],
+	['D', 'B'],
+	['D', 'A', 'E'],
+	['B', 'C'],
+]
+
 
 
 dataset1 = [
@@ -147,35 +161,54 @@ def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 			return list(map(list, tx)), ic
 
 
+def get_sort_key(dataset):
+	"""
+	returns: sort key as a dict whose keys are the unique trans
+		items and whose values are the sort order for that item;
+	pass in:
+		original dataset only (not conditional pattern bases)
+	sorts by decr frequency, then secondary sort by incr. alpha
+	t/4, sorts first by secondary key, then by primary key
+	"""
+	dataset = [set(trans) for trans in dataset]
+	item_count = item_counter(dataset)
+	ic = sorted(((k, v) for k, v in item_count.items()), key=itemgetter(0))
+	ic = sorted(ic, key=itemgetter(1), reverse=True)
+	return {t[0]: i for i, t in enumerate(ic)}
+	
+
+def reorder_items(dataset, sort_key=get_sort_key(data)):
+	"""
+	returns: list of lists sorted by item frequency
+	pass in: nested list, either original dataset or conditional
+		pattern bases
+	"""
+	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
+	return map(fnx, dataset)
+	
+
 def config_fptree_builder(dataset, trans_count, min_spt=None):
 	"""
-	returns: header table & dataset for input to build_tree;
+	returns: header table & sorted dataset for input to build_tree;
 	pass in: 
 		(i) raw data (nested list of dataset);
 		(ii) transaction count (length of original dataset)
-		(iii) min_spt (float) fraction of total dataset in which an item
+		(iii) sort_key, value returned from call to 'get_sort_key'
+		(iv) min_spt (float) fraction of total dataset in which an item
 			must appear to be included in the fptree
 	"""
 	dataset = [ set(trans) for trans in dataset ]
 	item_count = item_counter(dataset)
-	
 	if min_spt:
 		dataset, item_count = filter_by_min_spt(dataset, item_count, 
 								trans_count, min_spt)
-	# to sort by decr frequency, then secondary (alpha) sort by key (incr),
-	# sort first by secondary key, then again by primary key
-	ic = sorted(((k, v) for k, v in item_count.items()), 
-		key=itemgetter(0))
-	ic = sorted(ic, key=itemgetter(1), reverse=True)
-	sort_key = {t[0]: i for i, t in enumerate(ic)}
-	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
-	dataset = map(fnx, dataset)
+	dataset_sorted = reorder_items(dataset)
 	# build header table from freq_items w/ empty placeholders for node pointer
 	htable = CL.defaultdict(list)
 	for k in item_count.keys():
 	    htable[k].append(item_count[k])
-	return htable, dataset
- 
+	return htable, dataset_sorted
+
  
 class TreeNode:
 
@@ -265,10 +298,10 @@ def fpt(tn):
 
 # these need to be in this module's namespace so i can use them in
 # fptree_query
-fptree, htab = build_fptree(dataset=dataset1, trans_count=len(dataset1))
+fptree, htab = build_fptree(dataset=data, trans_count=len(data))
 
 if __name__ == '__main__':
 	
 	# returns complete fp-tree & header table
-	fptree, htab = build_fptree(dataset=dataset1, trans_count=len(dataset1))
+	fptree, htab = build_fptree(dataset=data, trans_count=len(data))
 
