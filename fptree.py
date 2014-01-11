@@ -10,9 +10,7 @@
 # TODO: create variable to avoid repeated lookups for 'parent_node.children[item]'
 # TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
 # TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
-# TODO: create a new table (like header table) that stores the terminus node for each route
 # TODO: a few of these fns i think are memoizable
-# TODO: *** clean up handling of duplicate items w/in a transaction
 # TODO: *** create tests for duplicate items in trans
 
 
@@ -39,6 +37,18 @@ data = [
 	['D', 'A', 'E'],
 	['B', 'C'],
 ]
+
+data0 = [
+	['B', 'E', 'B', 'D', 'A'],
+	['E', 'A', 'D', 'C', 'B'],
+	['C', 'E', 'B', 'A'],
+	['A', 'B', 'D'],
+	['D'],
+	['D', 'B'],
+	['D', 'A', 'E'],
+	['B', 'C'],
+]
+
 
 data1 = [
 	['B', 'D', 'E', 'A', 'E'],
@@ -258,10 +268,16 @@ def add_nodes(trans, header_table, parent_node):
 			parent_node.incr()
 			add_nodes(trans, header_table, parent_node)
 			
+		elif item in parent_node.children:
+			parent_node.children[item].incr()
+			parent_node = parent_node.children[item]
+			add_nodes(trans, header_table, parent_node)
+			
 		else:
 			# create the node & add it to the tree
 			parent_node.children[item] = TreeNode(item, parent_node)
 			this_node = parent_node.children[item]
+			# now update the node_links in the header table:
 			try:
 				# is there at least one node pointer for this item 
 				# in the header table?
@@ -274,7 +290,7 @@ def add_nodes(trans, header_table, parent_node):
 				# this is the 1st time this item is seen by this fn
 				# ie, no node pointer for this item in h/t, so add it
 				header_table[item].append(this_node)
-			# this_node = parent_node.children[item]
+			this_node = parent_node.children[item]
 			add_nodes(trans, header_table, this_node)
 
 
@@ -296,9 +312,17 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 								min_spt)
 	for trans in dataset:
 		add_nodes(trans, header_table, root)
+	# trim the headertable so it includes just the first node_link
+		# of each item type which can then be used to find all other 
+		# nodes of same type
 	header_table = {k:v[:2] for k, v in header_table.items()}
 	return fptree, header_table
 
+
+def main(data):
+	tc = len(data)
+	return build_fptree(dataset=data, trans_count=tc, min_spt=0.3, root_node_name='root')
+	
 
 def fpt(tn):
 	"""
@@ -315,10 +339,21 @@ def fpt(tn):
 
 # these need to be in this module's namespace so i can use them in
 # fptree_query
-fptree, htab = build_fptree(dataset=data1, trans_count=len(data1))
+fptree, htab = build_fptree(dataset=data0, trans_count=len(data0))
 
-if __name__ == '__main__':
+
+
+# if __name__ == '__main__':
+# 	# returns complete fp-tree & header table
+# 	fptree, htab = main(data)
+# 	
+# 	A1 = fptree.children['A']
+# 	# for k, v in htab.items():
+# # 		print("{0}\t{1}".format(k, v[0]))
+# 	for c in fptree.children.keys():
+# 		print(c)
+# 	
 	
-	# returns complete fp-tree & header table
-	fptree, htab = build_fptree(dataset=data1, trans_count=len(data1))
+
+
 
