@@ -20,6 +20,8 @@ from operator import itemgetter
 import functools as FT
 import itertools as IT
 
+import exception_handling as EX
+
 
 
 # min_spt = 50000
@@ -331,10 +333,19 @@ def fpt(tn):
 	convenience function for informal, node-by-node introspection
 	of the fptree object; call unbound to variable
 	"""
-	print("count: {0}".format(tn.count))
+	def has_node_link(tn):
+		if tn.node_link and tn.node_link.name == tn.name:
+			return "yes"
+		elif not tn.node_link:
+			return "no"
+		else:
+			return 
 	print("name: {0}".format(tn.name))
+	print("count: {0}".format(tn.count))
 	print("children: {0}".format(list(tn.children.keys())))
 	print("parent: {0}".format(tn.parent.name))
+	print("node_link? {0}.format(tn.no)")
+	print("\n")
 
 
 # these need to be in this module's namespace so i can use them in
