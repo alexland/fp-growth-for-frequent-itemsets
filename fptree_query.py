@@ -20,26 +20,43 @@ steps to query fp-tree:
 # TODO: refactor variable names: distinguish: 'item' to itemset and 'item to item
 # TODO: add frequency to 'frequent_items' so i can sort the results
 # TODO: get rid of 'min_spt' in place of something more appropriate
+# TODO: fix f-list calculation (use htab for counts)
+# TODO: fix 'get_conditional_pattern_bases' so count also returned is flag set to True
 
+
+data0 = [
+	['B', 'E', 'B', 'D', 'A'],
+	['E', 'A', 'D', 'C', 'B'],
+	['C', 'E', 'B', 'A'],
+	['A', 'B', 'D'],
+	['D'],
+	['D', 'B'],
+	['D', 'A', 'E'],
+	['B', 'C'],
+]
 
 
 import itertools as IT
+import collections as CL
+from functools import wraps
 
 import fptree as FPT
+import exception_handling as EX
 
 
 
 def like_item_traversal(item, header_table=FPT.htab):
 	"""
 	returned: dict of pointers to node objects having the same 
-		'name' attribute, keyed to the node's name attribute w/
-		incremented integer appended so keys are unique;
+		'name' attribute as 'item'; keys are the node's name attribute w/
+		incremented integer appended (to ensure unique), values are the 
+		node pointers that correspond to that node;
 	pass in: 
 		(i) str/int representation of a given unique transaction item;
-		(ii) header table
-		
+		(ii) header table (from fptree built from original transaction data)
 	"""
 	linked_nodes = {}
+	keys = []
 	c = IT.count()
 	fnx = lambda a: "{0}{1}".format(item, next(c))
 	node = header_table[item][-1]
@@ -80,30 +97,48 @@ def ascend_route(node, string_repr=False):
 
 def get_conditional_pattern_bases(item, header_table=FPT.htab, string_repr=False):
 	"""
-	returns:a nested list comprised of all node_routes for a given item,
-		one route per list;
+	returns:a list of tuples, each comprised of a node_routes and its count;
 	pass in:  
 		(i) str/int representation of a given unique transaction item
 		(ii) header table;
 	this fn transforms a raw 'route' from 'ascend_tree' into a cpb in 2
-	steps: (i) remove start & terminus (ii) reverse;
+		steps: 
+			(i) remove start & terminus 
+			(ii) reverse the order of the items;
+	'string_repr' flag should be set to 'False', *except*
+	for use in de-bugging, unit test, etc.
+	
 	"""
 	cpb_all = []
 	linked_nodes = like_item_traversal(item, header_table)
 	for node in linked_nodes.values():
-		# if the nodes are ponters rather than strings
 		route = ascend_route(node, string_repr=string_repr)
-		if not string_repr:
-			cnt = route[0].count
-			# remove the node start & terminus ('root') & reverse
-			cpb = route[1:-1][::-1]
-			cpb_all.append((cpb, cnt))
-		else:
-			cpb = route[1:-1][::-1]
-			cpb_all.append(cpb)
-	return cpb_all
+		cnt = route[0].count
+		cpb = route[1:-1][::-1]
+		cpb_all.append((cpb, cnt))
+	if not string_repr:
+		return cpb_all
+	# if the desired output is strings rather than node ponters
+	else:
+		return [list(map(lambda n: n.name, cpb[0])) for cpb in cpb_all]
+			
+		
+def create_f_list(cpb_all):
+	"""
+	returns: the 'f-list', a dict whose keys are the items comprising the
+		  conditional pattern bases & whose values are the frequency
+	pass in: conditional pattern bases for a given unique item in the 
+		transacdtions, this nested list is the value returned from calling
+		'get_conditional_pattern_bases', w/ 'string_repr' flag set to 'False'
+	"""
+	cpb_all_expanded = [(route * count) for route, count in cpb_all]
+	# restore string representation of nodes?
+	cpb_all_expanded = [list(map(lambda n: n.name, route)) 
+		for route in cpb_all_expanded]
+	return FPT.item_counter(cpb_all_expanded)
 	
-
+	
+	
 def filter_cpbs_by_flist(item, min_spt, trans_count, header_table=FPT.htab):
 	"""
 	returns: 
@@ -118,23 +153,25 @@ def filter_cpbs_by_flist(item, min_spt, trans_count, header_table=FPT.htab):
 	this fn first calculates cond ptn bases for the item passed in via
 	'get_conditional_pattern_bases', then calculates f-list'
 	"""
-	cond_ptn_bases = get_conditional_pattern_bases(item, header_table, 
+	cpb_all = get_conditional_pattern_bases(item, header_table, 
 						string_repr=True)
-	item_count = FPT.item_counter(cond_ptn_bases)
-	cpb_all_filtered, _ = FPT.filter_by_min_spt(cond_ptn_bases, item_count, min_spt, 
+	f_list = create_f_list(cpb_all)
+	cpb_all_filtered, _ = FPT.filter_by_min_spt(cpb_all, f_list, min_spt, 
 		trans_count)
 	return cpb_all_filtered, FPT.item_counter(cpb_all_filtered)
 
 
 def sort_cpbs_by_freq(cpb_all, dataset):
 	"""
-	returns: conditional pattern bases (list of lists) each re-orderdered
+	returns: generator obj--call 'list' to recover conditional pattern bases
+		 (list of lists) each re-orderdered
 		by item frequency in original dataset
 	pass in:
-		(i) conditional pattern bases (list of lists);
+		(i) conditional pattern bases (list of lists), ie, first value returned
+			from call to 'filter_cpbs_by_flist'
 		(ii) original dataset
 	"""
-	return reorder_items(cpb_all, sort_key=get_sort_key(dataset))
+	return FPT.reorder_items(cpb_all, sort_key=FPT.get_sort_key(dataset))
 
 
 
@@ -142,7 +179,7 @@ def build_conditional_fptree(dataset, item, min_spt, trans_count, header_table=F
 	"""
 	returns: conditional fptree (for a given unique transaction item)
 	pass in: 
-		(i) original datset
+		(i) original dataset
 		(ii) one unique item in transactions (str)
 		(iii) minimum support (float)
 		(iv) count of transactions in initial dataset;
@@ -150,11 +187,32 @@ def build_conditional_fptree(dataset, item, min_spt, trans_count, header_table=F
 	"""
 	cpb_all_filtered, _ = filter_cpbs_by_flist(item, min_spt, trans_count, header_table) 
 	cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all_filtered, dataset)
-	
-	
-	cond_fptree, _ = FPT.build_fptree(dataset=cpb_all_filtered, 
+	cond_fptree, _ = FPT.build_fptree(cpb_all_filtered, trans_count, min_spt,
 						root_node_name=item)
 	return cond_fptree
+	
+
+
+# returns a conditional fptree for unique item 'C'
+# the usable result needs to return something like ([C, B], 3)
+cfptree_c = build_conditional_fptree(data0, 'C', 0.3, len(data0))
+
+ 
+
+# returns a conditional fptree for unique item 'E'
+cfptree_e = build_conditional_fptree(data0, 'E', 0.3, len(data0))
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 
