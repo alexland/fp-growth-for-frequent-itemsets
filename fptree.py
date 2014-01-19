@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # encoding: utf-8
 
 """
@@ -12,6 +13,7 @@
 # TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
 # TODO: a few of these fns i think are memoizable
 # TODO: *** create tests for duplicate items in trans
+# TODO: in TreeNode, create 'repr' fn so node pointers print like 'name' attr
 
 
 
@@ -108,8 +110,8 @@ dataset2 = [
 def item_counter(dataset):
 	"""
 	returns: a dict whose keys are the unique items comprising the 
-		transactions & whose values are the integer counts;
-	pass in: raw data (nested list);
+		transactions & whose values are the integer counts
+	pass in: raw data (nested list)
 	"""
 	# flatten the data (from list of sets to list of items)
 	trans_flat = [item for trans in dataset for item in trans]
@@ -126,9 +128,9 @@ def get_items_below_min_spt(dataset, item_count, min_spt, trans_count):
 		('decimal percent')
 	pass in: 
 		(i) dataset
-		(ii) dict w/ items for keys, values are item frequency;
+		(ii) dict w/ items for keys, values are item frequency
 		(iii) min_spt (float, eg, 0.03 means each item must appear in 
-		at least 3% of the dataset);
+		at least 3% of the dataset)
 	calls 'item_counter'
 	"""
 	ic = {k:v for k, v in item_count.items() if (v/trans_count) < min_spt}
@@ -153,17 +155,18 @@ def build_min_spt_filter_str(excluded_items):
 def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 		"""
 		returns: 
-			(i) filterd dataset (remove items w/ freq < min_spt);
+			(i) filterd dataset (remove items w/ freq < min_spt)
 			(ii) filtered item counter
 		pass in:
-			(i) dataset (the raw dataset);
+			(i) dataset (the raw dataset)
 			(ii) dict w/ items for keys, values are item frequency,
-				returned by call to 'item_counter';
+				returned by call to 'item_counter', for queries this 
+				is probably an 'f-list', built by 'item_counter'
 			(iii) min_spt (float, eg, 0.03 means each item must appear in 
-			at least 3% of the dataset); 
+			at least 3% of the dataset) 
 			(iv) total number of transactions
 		removes any item from every transaction if that item's total freq
-		is below 'min_spt';
+		is below 'min_spt'
 		to call this fn, bind the call to two variables, like so:
 		filtered_trans, item_count_dict = filter_by_min_spt(...)
 		"""
@@ -188,24 +191,24 @@ def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 def get_sort_key(dataset):
 	"""
 	returns: sort key as a dict whose keys are the unique trans
-		items and whose values are the sort order for that item;
+		items and whose values are the sort order for that item
 	pass in:
 		original dataset only (not conditional pattern bases)
 	sorts by decr frequency, then secondary sort by incr. alpha
 	t/4, sorts first by secondary key, then by primary key
 	"""
-	dataset = [set(trans) for trans in dataset]
 	item_count = item_counter(dataset)
 	ic = sorted(((k, v) for k, v in item_count.items()), key=itemgetter(0))
 	ic = sorted(ic, key=itemgetter(1), reverse=True)
 	return {t[0]: i for i, t in enumerate(ic)}
 	
 
-def reorder_items(dataset, sort_key=get_sort_key(data)):
+def reorder_items(dataset, sort_key):
 	"""
 	returns: list of lists sorted by item frequency
-	pass in: nested list, either original dataset or conditional
-		pattern bases
+	pass in: 
+		(i) nested list, either original dataset or conditional pattern bases
+		(ii) sort_key, (dict) return value from call to 'get_sort_key
 	"""
 	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
 	return map(fnx, dataset)
@@ -216,7 +219,7 @@ def config_fptree_builder(dataset, trans_count, min_spt=None):
 	returns: header table & sorted dataset for input to build_tree
 		(latter returned as generator)
 	pass in: 
-		(i) raw data (nested list of dataset);
+		(i) raw data (nested list of dataset)
 		(ii) transaction count (length of original dataset)
 		(iii) sort_key, value returned from call to 'get_sort_key'
 		(iv) min_spt (float) fraction of total dataset in which an item
@@ -227,7 +230,8 @@ def config_fptree_builder(dataset, trans_count, min_spt=None):
 	if min_spt:
 		dataset, item_count = filter_by_min_spt(dataset, item_count, 
 								trans_count, min_spt)
-	dataset_sorted = reorder_items(dataset)
+	sort_key = get_sort_key(dataset)
+	dataset_sorted = reorder_items(dataset, sort_key)
 	# build header table from freq_items w/ empty placeholders for node pointer
 	htable = CL.defaultdict(list)
 	for k in item_count.keys():
@@ -237,10 +241,10 @@ def config_fptree_builder(dataset, trans_count, min_spt=None):
  
 class TreeNode:
 
-	def __init__(self, node_name, parent_node):
+	def __init__(self, node_name, parent_node, node_count=1):
 		self.name = node_name
 		self.node_link = None
-		self.count = 1
+		self.count = node_count
 		self.parent = parent_node
 		self.children = {} 
 
@@ -253,7 +257,7 @@ def add_nodes(trans, header_table, parent_node):
 	pass in: 
 		a transaction (list), 
 		header table (dict)
-		parent_node (instance of class TreeNode);
+		parent_node (instance of class TreeNode)
 	returns: nothing, converts a single transaction to
 		nodes in an fp-tree (or increments counts if exists)
 		and updates the companion header table 
@@ -299,14 +303,14 @@ def add_nodes(trans, header_table, parent_node):
 def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	"""
 	pass in: 
-		(i) raw data (list of dataset; one transcation per list)
-		(ii) transaction count in original dataset;
+		(i) raw data (list of dataset one transcation per list)
+		(ii) transaction count in original dataset
 		(iii) minimum support (0=<min_spt>1)
 		(iv) name of root node (str)
-	returns: fptree;
-	the 'main' fn in this module; instantiates fptree and builds it
-	by calling 'add_node'; when called, bind result to 2 variables:
-	one for thetree; the second for for the header table;
+	returns: fptree
+	the 'main' fn in this module instantiates fptree and builds it
+	by calling 'add_node' when called, bind result to 2 variables:
+	one for the tree, the second for the header table
 	"""
 	fptree = TreeNode(root_node_name, None)
 	root = fptree
@@ -327,25 +331,21 @@ def main(data):
 	
 
 def fpt(tn):
-	"""
-	returns: None;
-	pass in: an fptree node;
-	convenience function for informal, node-by-node introspection
-	of the fptree object; call unbound to variable
-	"""
-	def has_node_link(tn):
-		if tn.node_link and tn.node_link.name == tn.name:
-			return "yes"
-		elif not tn.node_link:
-			return "no"
-		else:
-			return 
-	print("name: {0}".format(tn.name))
-	print("count: {0}".format(tn.count))
-	print("children: {0}".format(list(tn.children.keys())))
-	print("parent: {0}".format(tn.parent.name))
-	print("node_link? {0}.format(tn.no)")
-	print("\n")
+    """
+    returns: None
+    pass in: an fptree node
+    convenience function for informal, node-by-node introspection
+    of the fptree object call unbound to variable
+    """
+    if tn.node_link:
+        print("node_link? {0}".format(tn.node_link.name))
+    else:
+         print("node_link? none")
+    print("name: {0}".format(tn.name))
+    print("count: {0}".format(tn.count))
+    print("children: {0}".format(list(tn.children.keys())))
+    print("parent: {0}".format(tn.parent.name))
+    print("\n")
 
 
 # these need to be in this module's namespace so i can use them in
