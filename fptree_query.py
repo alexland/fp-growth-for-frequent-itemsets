@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # encoding: utf-8
 
 """
@@ -5,15 +6,15 @@ steps to query fp-tree:
 
 	for a given item (any atomic element comprising the transactions):
 		
-		(i) 	get conditional pattern bases;
-		(ii) 	get F-list 
-		(iii)	filter cpb against F-list (by min_spt)
-		(iv)	sort each cpb by item frequency
+		(i) 	get conditional pattern bases
+		(ii) 	get F-list (filtered against min spt)
+		(iii)	sort each cpb by item frequency
 		(v) 	build conditional fp-tree
 		(vi)	place results in container for fast, intuitive retrieval
 
 """
 
+# TODO: *** refactor 'create_flist' so that it returns res filtered by min spt
 # TODO: if 2 items have same freq, sort by alpha/numeric order
 # TODO: eliminate the "sort header table" from mineTree
 # TODO: to exemplary queries below, add frequency (refactor mineTree)
@@ -22,7 +23,7 @@ steps to query fp-tree:
 # TODO: get rid of 'min_spt' in place of something more appropriate
 # TODO: fix f-list calculation (use htab for counts)
 # TODO: fix 'get_conditional_pattern_bases' so count also returned is flag set to True
-
+# TODO: need to collect frequent itemsets during recursive cfptree building 
 
 data0 = [
 	['B', 'E', 'B', 'D', 'A'],
@@ -48,11 +49,11 @@ import exception_handling as EX
 def like_item_traversal(item, header_table=FPT.htab):
 	"""
 	returned: dict of pointers to node objects having the same 
-		'name' attribute as 'item'; keys are the node's name attribute w/
+		'name' attribute as 'item' keys are the node's name attribute w/
 		incremented integer appended (to ensure unique), values are the 
-		node pointers that correspond to that node;
+		node pointers that correspond to that node
 	pass in: 
-		(i) str/int representation of a given unique transaction item;
+		(i) str/int representation of a given unique transaction item
 		(ii) header table (from fptree built from original transaction data)
 	"""
 	linked_nodes = {}
@@ -95,119 +96,129 @@ def ascend_route(node, string_repr=False):
 # (i) the last item in the returned list must be 'root'
 
 
-def get_conditional_pattern_bases(item, header_table=FPT.htab, string_repr=False):
+def get_conditional_pattern_bases(item, header_table=FPT.htab):
 	"""
-	returns:a list of tuples, each comprised of a node_routes and its count;
+	returns:a list of tuples, each tuple comprised of a conditional pattern base
+	(node route) and the count for that cpb
 	pass in:  
 		(i) str/int representation of a given unique transaction item
-		(ii) header table;
+		(ii) header table
 	this fn transforms a raw 'route' from 'ascend_tree' into a cpb in 2
 		steps: 
 			(i) remove start & terminus 
-			(ii) reverse the order of the items;
+			(ii) reverse the order of the items
 	'string_repr' flag should be set to 'False', *except*
 	for use in de-bugging, unit test, etc.
 	
 	"""
 	cpb_all = []
+	fnx = lambda n: n.name
 	linked_nodes = like_item_traversal(item, header_table)
 	for node in linked_nodes.values():
-		route = ascend_route(node, string_repr=string_repr)
+		route = ascend_route(node, string_repr=False)
 		cnt = route[0].count
 		cpb = route[1:-1][::-1]
-		cpb_all.append((cpb, cnt))
-	if not string_repr:
-		return cpb_all
-	# if the desired output is strings rather than node ponters
-	else:
-		return [list(map(lambda n: n.name, cpb[0])) for cpb in cpb_all]
+		cpb_all.append((list(map(fnx, cpb)), cnt))
+	return cpb_all
 			
 		
-def create_f_list(cpb_all):
+def create_flist(dataset, cpb_all, min_spt):
 	"""
 	returns: the 'f-list', a dict whose keys are the items comprising the
 		  conditional pattern bases & whose values are the frequency
-	pass in: conditional pattern bases for a given unique item in the 
+		  of the nodes ('count' attr) in the conditional fptree
+		  items in the f-list are filtered against min_spt before return
+	pass in: 
+		(i) original dataset
+		(ii) conditional pattern bases for a given unique item in the 
 		transacdtions, this nested list is the value returned from calling
-		'get_conditional_pattern_bases', w/ 'string_repr' flag set to 'False'
+		'get_conditional_pattern_bases'
+		(iii) min_spt
 	"""
+	import math
+	min_spt = math.ceil(min_spt * len(dataset))
 	cpb_all_expanded = [(route * count) for route, count in cpb_all]
 	# restore string representation of nodes?
-	cpb_all_expanded = [list(map(lambda n: n.name, route)) 
-		for route in cpb_all_expanded]
-	return FPT.item_counter(cpb_all_expanded)
+	flist = FPT.item_counter(cpb_all_expanded)
+	# now filter by min spt
+	# translate mnin_spt to actual count (eg, 3)
+	return {k:v for k,v in flist.items() if v >= min_spt}
 	
 	
-	
-def filter_cpbs_by_flist(item, min_spt, trans_count, header_table=FPT.htab):
-	"""
-	returns: 
-		(i) a dict whose keys are unique items and whose 
-			values are the count in the cpbs for this item;
-		(ii) filtered conditional pattern bases by min_spt
-	pass in: 
-		(i) one unique item in transactions (str)
-		(ii) header table;
-		(iii) min_spt (float);
-		(iv) transaction count (number of transactions)
-	this fn first calculates cond ptn bases for the item passed in via
-	'get_conditional_pattern_bases', then calculates f-list'
-	"""
-	cpb_all = get_conditional_pattern_bases(item, header_table, 
-						string_repr=True)
-	f_list = create_f_list(cpb_all)
-	cpb_all_filtered, _ = FPT.filter_by_min_spt(cpb_all, f_list, min_spt, 
-		trans_count)
-	return cpb_all_filtered, FPT.item_counter(cpb_all_filtered)
+def filter_cpbs_by_flist(dataset, item, min_spt, trans_count, header_table=FPT.htab):
+    """
+    returns:  
+    (i) an item's conditional pattern bases, filtered by min_spt
+    (ii) a dict whose keys are unique items and whose values are the
+    count in the cpbs for this item
+    pass in: 
+    (i) one unique item in transactions (str)
+    (ii) header table
+    (iii) min_spt (float)
+    (iv) transaction count (number of transactions) this fn first calculates
+    cond ptn bases for the item passed in by calling get_conditional_pattern_bases,
+    then calculates f-list by calling create_flist
+    """
+    cpb_all = get_conditional_pattern_bases(item, header_table)
+    f_list = create_flist(dataset, cpb_all, min_spt)
+    cpb_all = [list(IT.repeat(cpb, cnt)) for cpb, cnt in cpb_all]
+    cpb_all = [itm for inlist in cpb_all for itm in inlist]
+    cpb_all_filtered, _ = FPT.filter_by_min_spt(cpb_all, f_list, min_spt, trans_count)
+    return cpb_all_filtered, FPT.item_counter(cpb_all_filtered)
 
 
-def sort_cpbs_by_freq(cpb_all, dataset):
+def sort_cpbs_by_freq(cpb_all_filtered, dataset):
 	"""
-	returns: generator obj--call 'list' to recover conditional pattern bases
-		 (list of lists) each re-orderdered
-		by item frequency in original dataset
+	returns: generator obj (call 'list' to recover conditional pattern bases)
+		 (list of lists) each re-orderdered by item frequency in original dataset
 	pass in:
-		(i) conditional pattern bases (list of lists), ie, first value returned
-			from call to 'filter_cpbs_by_flist'
+		(i) conditional pattern bases (list of lists), ie, first value in
+			2-tuple returned from call to 'filter_cpbs_by_flist'
 		(ii) original dataset
 	"""
-	return FPT.reorder_items(cpb_all, sort_key=FPT.get_sort_key(dataset))
+	return FPT.reorder_items(cpb_all_filtered, sort_key=FPT.get_sort_key(dataset))
 
 
-
-def build_conditional_fptree(dataset, item, min_spt, trans_count, header_table=FPT.htab):
+def build_conditional_fptree(dataset, item, min_spt, trans_count, 
+	header_table=FPT.htab):
 	"""
 	returns: conditional fptree (for a given unique transaction item)
 	pass in: 
 		(i) original dataset
 		(ii) one unique item in transactions (str)
 		(iii) minimum support (float)
-		(iv) count of transactions in initial dataset;
+		(iv) count of transactions in initial dataset
 	this fn is a thin wrapper over 'build_fptree'
 	"""
 	cpb_all_filtered, _ = filter_cpbs_by_flist(item, min_spt, trans_count, header_table) 
 	cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all_filtered, dataset)
-	cond_fptree, _ = FPT.build_fptree(cpb_all_filtered, trans_count, min_spt,
+	cfptree, _ = FPT.build_fptree(cpb_all_filtered_sorted, trans_count, min_spt,
 						root_node_name=item)
-	return cond_fptree
+	return cfptree
 	
 
 
 # returns a conditional fptree for unique item 'C'
 # the usable result needs to return something like ([C, B], 3)
-cfptree_c = build_conditional_fptree(data0, 'C', 0.3, len(data0))
+# cfptree_c = build_conditional_fptree(data0, 'C', 0.3, len(data0))
 
  
 
 # returns a conditional fptree for unique item 'E'
-cfptree_e = build_conditional_fptree(data0, 'E', 0.3, len(data0))
+# cfptree_e = build_conditional_fptree(data0, 'E', 0.3, len(data0))
 	
 	
-	
-	
-	
-	
-	
+min_spt = 0.3
+
+cpb_all = get_conditional_pattern_bases('E', FPT.htab)
+f_list = create_flist(data0, cpb_all, min_spt)
+
+cpb_all_filtered = filter_cpbs_by_flist('E', 0.3, len(data0), FPT.htab)
+cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all, data0)
+
+cfptree, _ = FPT.build_fptree(list(cpb_all_filtered_sorted), len(data0), 0.3, 'E')
+
+
 	
 	
 	
