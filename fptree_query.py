@@ -213,10 +213,10 @@ min_spt = 0.3
 cpb_all = get_conditional_pattern_bases('E', FPT.htab)
 f_list = create_flist(data0, cpb_all, min_spt)
 
-cpb_all_filtered = filter_cpbs_by_flist('E', 0.3, len(data0), FPT.htab)
+cpb_all_filtered = filter_cpbs_by_flist(data0, 'E', 0.3, len(data0), FPT.htab)
 cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all, data0)
 
-cfptree, _ = FPT.build_fptree(list(cpb_all_filtered_sorted), len(data0), 0.3, 'E')
+# cfptree, _ = FPT.build_fptree(list(cpb_all_filtered_sorted), len(data0), 0.3, 'E')
 
 
 	
