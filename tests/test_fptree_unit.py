@@ -133,31 +133,32 @@ def test3_build_min_spt_filter_str():
 
 # unit tests for fptree_query:
 
-def test2_f_list():
-	trans_count = len(data1)
-	min_spt = 0.3
-	item = "C"
-	_, htab = build_fptree(data1)
-	_, flist = FPQ.f_list(item, htab, min_spt, trans_count)
-	assert len(flist.items()) == 1
+def test2_flist():
+    min_spt = 0.3
+    item = "C"
+    _, htab = build_fptree(data1)
+    cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
+    f_list = FPQ.create_flist(data1, cpb_all, min_spt)
+    assert len(f_list.items()) == 1
 
 
-def test2_f_list():
-	trans_count = len(data1)
-	min_spt = 0.3
-	item = "C"
-	_, htab = build_fptree(data1)
-	_, flist= FPQ.filter_cpbs_by_flist(data1, item, min_spt, trans_count, htab)
-	assert list(flist.values())[0] == 3
+def test2_flist():
+    min_spt = 0.3
+    item = "C"
+    _, htab = build_fptree(data1)
+    cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
+    f_list = FPQ.create_flist(data1, cpb_all, min_spt)
+    assert list(f_list.values())[0] == 3
 
 
 def test3_f_list():
-	trans_count = len(data1)
-	min_spt = 0.3
-	item = "C"
-	_, htab = build_fptree(data1)
-	_, flist = FPQ.filter_cpbs_by_flist(data1, item, min_spt, trans_count, htab)
-	assert list(flist.keys())[0] == 'B'
+    trans_count = len(data1) 
+    min_spt = 0.3
+    item = "C"
+    _, htab = build_fptree(data1)
+    cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
+    f_list = FPQ.create_flist(data1, cpb_all, min_spt)
+    assert list(f_list.keys())[0] == 'B'
 
 
  
