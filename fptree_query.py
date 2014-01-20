@@ -195,7 +195,59 @@ def build_conditional_fptree(dataset, item, min_spt, trans_count,
 	cfptree, _ = FPT.build_fptree(cpb_all_filtered_sorted, trans_count, min_spt,
 						root_node_name=item)
 	return cfptree
-	
+
+
+#------------------ recursively find frequent itemsets  --------------------#
+
+# call build_conditional_fptree, then
+# (i) if cfptree has more than one node in it:
+# (ii) repeat the mining loop; ELSE: exit
+
+
+def find_frequent_itemsets(fptree, header_table=FPT.htab, frequent_itemsets=[]):
+    """
+    """
+    
+    # mine tree for frequent itemsets
+    
+    
+    # add filtered conditional pattern bases to a temp container
+    fis = count_frequent_itemsets(cpb_all_filtered)
+    frequent_itemsets.append(fis)
+
+    # examine cfptree to determine which case below applies
+    
+    # base case:
+    return
+
+    # recursive case:
+    return find_frequent_itemsets(cfptree, frequent_itemsets=frequent_itemsets)
+    
+
+    
+
+
+
+
+
+#------------------ process frequent item sets --------------------#
+
+# temporary container for frequent itemsets
+frequent_itemsets = []
+
+def count_frequent_itemsets(freq_itemsets):
+    """
+    """
+    fnx = lambda q: ''.join(q)
+    tx = map(fnx, freq_itemsets)
+    cx = CL.defaultdict(int)
+    for s in tx:
+        cx[s] += 1
+   return cx
+    
+
+
+
 
 
 # returns a conditional fptree for unique item 'C'
@@ -206,7 +258,8 @@ def build_conditional_fptree(dataset, item, min_spt, trans_count,
 
 # returns a conditional fptree for unique item 'E'
 # cfptree_e = build_conditional_fptree(data0, 'E', 0.3, len(data0))
-	
+
+frequent_itemsets = []
 	
 min_spt = 0.3
 
@@ -214,6 +267,11 @@ cpb_all = get_conditional_pattern_bases('E', FPT.htab)
 f_list = create_flist(data0, cpb_all, min_spt)
 
 cpb_all_filtered = filter_cpbs_by_flist(data0, 'E', 0.3, len(data0), FPT.htab)
+
+frequent_itemsets.append(cpb_all_filtered)
+
+
+
 cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all, data0)
 
 # cfptree, _ = FPT.build_fptree(list(cpb_all_filtered_sorted), len(data0), 0.3, 'E')
