@@ -12,14 +12,14 @@ import fptree_query as FPQ
 #-------------------------- test set-up & tear-down -----------------#
 
 data1 = [
-	['B', 'D', 'A', 'E'],
-	['B', 'D', 'A', 'E', 'C'],
-	['B', 'A', 'E', 'C'],
-	['B', 'D', 'A'],
+	['B', 'E', 'B', 'D', 'A'],
+	['E', 'A', 'D', 'C', 'B'],
+	['C', 'E', 'B', 'A'],
+	['A', 'B', 'D'],
 	['D'],
-	['B', 'D'],
+	['D', 'B'],
 	['D', 'A', 'E'],
-	['B', 'C']
+	['B', 'C'],
 ]
 
 data2 = [
@@ -108,7 +108,7 @@ def test_item_counter():
 def test2_item_counter():
 	ic = FPT.item_counter(data1)
 	vx = sorted(list(ic.values()))
-	assert vx == sorted([6, 3, 5, 6, 4])
+	assert vx == sorted([7, 3, 5, 6, 4])
 
 
 # def test_get_items_below_min_spt():
@@ -147,7 +147,7 @@ def test2_f_list():
 	min_spt = 0.3
 	item = "C"
 	_, htab = build_fptree(data1)
-	_, flist= FPQ.filter_cpbs_by_flist(item, min_spt, trans_count, htab)
+	_, flist= FPQ.filter_cpbs_by_flist(data1, item, min_spt, trans_count, htab)
 	assert list(flist.values())[0] == 3
 
 
@@ -156,7 +156,7 @@ def test3_f_list():
 	min_spt = 0.3
 	item = "C"
 	_, htab = build_fptree(data1)
-	_, flist = FPQ.filter_cpbs_by_flist(item, min_spt, trans_count, htab)
+	_, flist = FPQ.filter_cpbs_by_flist(data1, item, min_spt, trans_count, htab)
 	assert list(flist.keys())[0] == 'B'
 
 
