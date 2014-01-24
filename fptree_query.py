@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-import fptree_query_utils as FPTU
+import fptree as FPT
+import fptree_query_utils as FQU
 
 
 # temporary container for frequent itemsets
@@ -28,31 +29,56 @@ def count_frequent_itemsets(freq_itemsets):
 # then if cfptree has more than one node in it:
 # repeat the mining loop; ELSE: exit
 
-
-def find_frequent_itemsets(fptree, header_table=FPT.htab, frequent_itemsets=[]):
+def find_frequent_itemsets(item, fptree, dataset, min_spt, trans_count,
+	header_table=FPT.htab, frequent_itemsets=[]):
 	"""
-	returns: None, recursively builds conditional fptrees, mines
+	returns: None, recursively builds conditional fptrees, mine
 		them for frequent item sets then adds them to frequent_itemsets
 	pass in:
+		(i) empty container (frequent_itemsets)
 	"""
-	# get unique transaction items & select 1 to begin with
-
-
 	# mine tree for frequent itemsets
-	cpb_all = get_conditional_pattern_bases()
+	cpb_all = FQU.get_conditional_pattern_bases(item, header_table)
+	f_list = FQU.create_flist(dataset, cpb_all, min_spt)
+	cpb_all = FQU.filter_cpbs_by_flist(cpb_all, f_list, min_spt, trans_count,
+		header_table)
+	# add frequent pattern bases to container
+		# after the cpbs are filtered but *before* they are re-ordered:
+	for fi in cpb_all:
+		fi.append(item)
+		frequent_itemsets.append(fi)
 
-	f_list = create_flist(dataset, cpb_all, min_spt)
+	cpb_all = FQU.sort_cpbs_by_freq(cpb_all, dataset)
+	return frequent_itemsets
 
 
-	# add filtered conditional pattern bases to a temp container
-	fis = count_frequent_itemsets(cpb_all_filtered)
-	frequent_itemsets.append(fis)
 
-	# examine cfptree to determine which case below applies
+# examine cfptree to determine which case below applies
 
-	# base case:
-	return
+# base case:
+# return
 
-	# recursive case:
-	return find_frequent_itemsets(cfptree, frequent_itemsets=frequent_itemsets)
+# recursive case:
+# return find_frequent_itemsets(cfptree, frequent_itemsets=frequent_itemsets)
 
+
+unique_transaction_items = list(FPT.htab.keys())
+
+item = 'E'
+min_spt = 0.3
+header_table = FPT.htab
+dataset = FPT.data0
+trans_count = len(dataset)
+
+cpb_all = FQU.cpb_all
+f_list = FQU.f_list
+cpb_all_filtered = FQU.cpb_all_filtered
+cpb_all_filtered_sorted = FQU.cpb_all_filtered_sorted
+
+# find_frequent_itemsets('E', FPT.fptree, dataset, min_spt, trans_count, FPT.htab)
+
+# for t in unique_transaction_items:
+# 	find_frequent_itemsets()
+
+# add filtered conditional pattern bases to a temp container
+	# count_frequent_itemsets(cpb_all_filtered)
