@@ -16,7 +16,6 @@
 # TODO: in TreeNode, create 'repr' fn so node pointers print like 'name' attr
 
 
-
 import collections as CL
 from operator import itemgetter
 import functools as FT
@@ -32,7 +31,7 @@ import itertools as IT
 # 	pdata = [ line.strip().split() for line in fh.readlines() ]
 
 data = [
-	['E', 'B', 'D', 'A'],
+    ['E', 'B', 'D', 'A'],
 	['E', 'A', 'D', 'C', 'B'],
 	['C', 'E', 'B', 'A'],
 	['A', 'B', 'D'],
@@ -78,9 +77,8 @@ dataset1 = [
 	['B', 'C'],
 ]
 
-
 dataset2 = [
-	['C', 'A', 'T', 'S'],
+    ['C', 'A', 'T', 'S'],
 	['C', 'A', 'T', 'S', 'U', 'P'],
 	['C', 'A', 'T'],
 	['C', 'A', 'T', 'C', 'H'],
@@ -108,33 +106,33 @@ dataset2 = [
 
 
 def item_counter(dataset):
-	"""
-	returns: a dict whose keys are the unique items comprising the 
+    """
+    returns: a dict whose keys are the unique items comprising the
 		transactions & whose values are the integer counts
 	pass in: raw data (nested list)
-	"""
-	# flatten the data (from list of sets to list of items)
-	trans_flat = [item for trans in dataset for item in trans]
-	ic = CL.defaultdict(int)
-	for item in trans_flat:
-		ic[item] += 1
-	return ic
+    """
+    # flatten the data (from list of sets to list of items)
+    trans_flat = [item for trans in dataset for item in trans]
+    ic = CL.defaultdict(int)
+    for item in trans_flat:
+        ic[item] += 1
+    return ic
 
 
 def get_items_below_min_spt(dataset, item_count, min_spt, trans_count):
-	"""
-	returns: list of the unique items whose frequency over the
-		dataset is below some min_spt (float between 0 and 1, 
+    """
+    returns: list of the unique items whose frequency over the
+		dataset is below some min_spt (float between 0 and 1,
 		('decimal percent')
-	pass in: 
+	pass in:
 		(i) dataset
 		(ii) dict w/ items for keys, values are item frequency
-		(iii) min_spt (float, eg, 0.03 means each item must appear in 
-		at least 3% of the dataset)
-	calls 'item_counter'
-	"""
-	ic = {k:v for k, v in item_count.items() if (v/trans_count) < min_spt}
-	return list(ic.keys())
+		(iii) min_spt (float, eg, 0.03 means each item must appear in
+		    at least 3% of the dataset)
+	        calls 'item_counter'
+    """
+    ic = {k:v for k, v in item_count.items() if (v/trans_count) < min_spt}
+    return list(ic.keys())
 
 
 def build_min_spt_filter_str(excluded_items):
@@ -153,39 +151,39 @@ def build_min_spt_filter_str(excluded_items):
 
 
 def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
-		"""
-		returns: 
-			(i) filterd dataset (remove items w/ freq < min_spt)
-			(ii) filtered item counter
-		pass in:
-			(i) dataset (the raw dataset)
-			(ii) dict w/ items for keys, values are item frequency,
-				returned by call to 'item_counter', for queries this 
-				is probably an 'f-list', built by 'item_counter'
-			(iii) min_spt (float, eg, 0.03 means each item must appear in 
-			at least 3% of the dataset) 
-			(iv) total number of transactions
-		removes any item from every transaction if that item's total freq
-		is below 'min_spt'
-		to call this fn, bind the call to two variables, like so:
-		filtered_trans, item_count_dict = filter_by_min_spt(...)
-		"""
-		excluded_items = get_items_below_min_spt(dataset, item_count, 
-			min_spt, trans_count)
-		if not excluded_items:
-			# if all items are above min_spt, ie, there are no items to exclude
-			# so just return original args
-			return dataset, item_count
-		else:
-			# there is at least one item to exclude
-			# now build the expression required by 'IT.filterfalse' from the
-			# list of excluded items
-			filter_str = build_min_spt_filter_str(excluded_items)
-			# remove those items below min_spt threshold items
-			tx = [IT.filterfalse(lambda q: eval(filter_str), trans) 
-					for trans in dataset]
-			ic = {k:v for k, v in item_count.items() if (v/trans_count) >= min_spt}
-			return list(map(list, tx)), ic
+	"""
+	returns:
+		(i) filterd dataset (remove items w/ freq < min_spt)
+		(ii) filtered item counter
+	pass in:
+		(i) dataset (the raw dataset)
+		(ii) dict w/ items for keys, values are item frequency,
+			returned by call to 'item_counter', for queries this
+			is probably an 'f-list', built by 'item_counter'
+		(iii) min_spt (float, eg, 0.03 means each item must appear in
+			at least 3% of the dataset)
+		(iv) total number of transactions
+	removes any item from every transaction if that item's total freq
+	is below 'min_spt'
+	to call this fn, bind the call to two variables, like so:
+	filtered_trans, item_count_dict = filter_by_min_spt(...)
+	"""
+	excluded_items = get_items_below_min_spt(dataset, item_count,
+		min_spt, trans_count)
+	if not excluded_items:
+		# if all items are above min_spt, ie, there are no items to exclude
+		# so just return original args
+		return dataset, item_count
+	else:
+		# there is at least one item to exclude
+		# now build the expression required by 'IT.filterfalse' from the
+		# list of excluded items
+		filter_str = build_min_spt_filter_str(excluded_items)
+		# remove those items below min_spt threshold items
+		tx = [IT.filterfalse(lambda q: eval(filter_str), trans)
+				for trans in dataset]
+		ic = {k:v for k, v in item_count.items() if (v/trans_count) >= min_spt}
+		return list(map(list, tx)), ic
 
 
 def get_sort_key(dataset):
@@ -201,24 +199,24 @@ def get_sort_key(dataset):
 	ic = sorted(((k, v) for k, v in item_count.items()), key=itemgetter(0))
 	ic = sorted(ic, key=itemgetter(1), reverse=True)
 	return {t[0]: i for i, t in enumerate(ic)}
-	
+
 
 def reorder_items(dataset, sort_key):
 	"""
 	returns: list of lists sorted by item frequency
-	pass in: 
+	pass in:
 		(i) nested list, either original dataset or conditional pattern bases
 		(ii) sort_key, (dict) return value from call to 'get_sort_key
 	"""
 	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
 	return map(fnx, dataset)
-	
+
 
 def config_fptree_builder(dataset, trans_count, min_spt=None):
 	"""
 	returns: header table & sorted dataset for input to build_tree
 		(latter returned as generator)
-	pass in: 
+	pass in:
 		(i) raw data (nested list of dataset)
 		(ii) transaction count (length of original dataset)
 		(iii) sort_key, value returned from call to 'get_sort_key'
@@ -228,7 +226,7 @@ def config_fptree_builder(dataset, trans_count, min_spt=None):
 	# dataset = [ set(trans) for trans in dataset ]
 	item_count = item_counter(dataset)
 	if min_spt:
-		dataset, item_count = filter_by_min_spt(dataset, item_count, 
+		dataset, item_count = filter_by_min_spt(dataset, item_count,
 								trans_count, min_spt)
 	sort_key = get_sort_key(dataset)
 	dataset_sorted = reorder_items(dataset, sort_key)
@@ -238,7 +236,7 @@ def config_fptree_builder(dataset, trans_count, min_spt=None):
 	    htable[k].append(item_count[k])
 	return htable, dataset_sorted
 
- 
+
 class TreeNode:
 
 	def __init__(self, node_name, parent_node, node_count=1):
@@ -246,21 +244,21 @@ class TreeNode:
 		self.node_link = None
 		self.count = node_count
 		self.parent = parent_node
-		self.children = {} 
+		self.children = {}
 
 	def incr(self, freq=1):
-		self.count += freq 
- 
-			
+		self.count += freq
+
+
 def add_nodes(trans, header_table, parent_node):
 	"""
-	pass in: 
-		a transaction (list), 
+	pass in:
+		a transaction (list),
 		header table (dict)
 		parent_node (instance of class TreeNode)
 	returns: nothing, converts a single transaction to
 		nodes in an fp-tree (or increments counts if exists)
-		and updates the companion header table 
+		and updates the companion header table
 	"""
 	while len(trans) > 0:
 		item = trans.pop(0)
@@ -273,19 +271,19 @@ def add_nodes(trans, header_table, parent_node):
 		if item == parent_node.name:
 			parent_node.incr()
 			add_nodes(trans, header_table, parent_node)
-			
+
 		elif item in parent_node.children:
 			parent_node.children[item].incr()
 			parent_node = parent_node.children[item]
 			add_nodes(trans, header_table, parent_node)
-			
+
 		else:
 			# create the node & add it to the tree
 			parent_node.children[item] = TreeNode(item, parent_node)
 			this_node = parent_node.children[item]
 			# now update the node_links in the header table:
 			try:
-				# is there at least one node pointer for this item 
+				# is there at least one node pointer for this item
 				# in the header table?
 				# ie, does this item appear in another route, or
 				header_table[item][1]
@@ -302,7 +300,7 @@ def add_nodes(trans, header_table, parent_node):
 
 def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	"""
-	pass in: 
+	pass in:
 		(i) raw data (list of dataset one transcation per list)
 		(ii) transaction count in original dataset
 		(iii) minimum support (0=<min_spt>1)
@@ -314,12 +312,12 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	"""
 	fptree = TreeNode(root_node_name, None)
 	root = fptree
-	header_table, dataset = config_fptree_builder(dataset, trans_count, 
+	header_table, dataset = config_fptree_builder(dataset, trans_count,
 								min_spt)
 	for trans in dataset:
 		add_nodes(trans, header_table, root)
 	# trim the headertable so it includes just the first node_link
-		# of each item type which can then be used to find all other 
+		# of each item type which can then be used to find all other
 		# nodes of same type
 	header_table = {k:v[:2] for k, v in header_table.items()}
 	return fptree, header_table
@@ -328,7 +326,7 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 def main(data):
 	tc = len(data)
 	return build_fptree(dataset=data, trans_count=tc, min_spt=0.3, root_node_name='root')
-	
+
 
 def fpt(tn):
     """
@@ -357,14 +355,14 @@ fptree, htab = build_fptree(dataset=data0, trans_count=len(data0))
 # if __name__ == '__main__':
 # 	# returns complete fp-tree & header table
 # 	fptree, htab = main(data)
-# 	
+#
 # 	A1 = fptree.children['A']
 # 	# for k, v in htab.items():
 # # 		print("{0}\t{1}".format(k, v[0]))
 # 	for c in fptree.children.keys():
 # 		print(c)
-# 	
-	
+#
+
 
 
 
