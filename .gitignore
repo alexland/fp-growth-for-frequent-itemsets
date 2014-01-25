@@ -2,6 +2,8 @@
 *.DS_Store
 *.csv
 *.jpg
+*.sublime-project
+*.sublime-workspace
 /data/*
 /ipython-notebooks/.ipynb_checkpoints/*
 /__pycache__/*
