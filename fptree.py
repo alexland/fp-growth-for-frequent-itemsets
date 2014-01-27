@@ -350,7 +350,7 @@ def fpt(tn):
 # fptree_query
 fptree, htab = build_fptree(dataset=data0, trans_count=len(data0))
 
-
+c_reorder_items = FT.partial(reorder_items, dataset=data0)
 
 # if __name__ == '__main__':
 # 	# returns complete fp-tree & header table
