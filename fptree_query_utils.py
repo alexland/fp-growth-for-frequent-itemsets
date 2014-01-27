@@ -114,9 +114,10 @@ def get_conditional_pattern_bases(item, header_table=FPT.htab):
 	linked_nodes = like_item_traversal(item, header_table)
 	for node in linked_nodes.values():
 		route = ascend_route(node, string_repr=False)
-		cnt = route[0].count
-		cpb = route[1:-1][::-1]
-		cpb_all.append((list(map(fnx, cpb)), cnt))
+		if len(route) > 2:
+			cnt = route[0].count
+			cpb = route[1:-1][::-1]
+			cpb_all.append((list(map(fnx, cpb)), cnt))
 	return cpb_all
 
 
@@ -143,16 +144,16 @@ def create_flist(dataset, cpb_all, min_spt):
 	return {k:v for k,v in ic.items() if v >= min_spt}
 
 
-def filter_cpbs_by_flist(cpb_all, f_list):
+def filter_cpb_by_flist(cpb_all, f_list):
 	"""
 	returns:
 	pass in:
 	"""
 	fnx = lambda q: q in list(f_list.keys())
-	return [ list(filter(fnx, cpb[0])) for cpb in cpb_all ]
+	return [ (list(filter(fnx, cpb)), cnt) for cpb, cnt in cpb_all ]
 
 
-def sort_cpbs_by_freq(cpb_all, dataset):
+def sort_cpb_by_freq(cpb_all, dataset):
 	"""
 	returns: generator obj (call 'list' to recover conditional pattern bases)
 		 (list of lists) each list re-orderdered by item frequency
@@ -162,12 +163,19 @@ def sort_cpbs_by_freq(cpb_all, dataset):
 			returned from call to filterd_cpbs_by_flist
 		(ii) original dataset
 	"""
-	return FPT.reorder_items(cpb_all, sort_key=FPT.get_sort_key(dataset))
+	# expand each [cpb, count]
+	cpb_all = [ list(IT.repeat(cpb, cnt)) for cpb, cnt in cpb_all ]
+	# flatten one level
+	cpb_all = [itm for inlist in cpb_all for itm in inlist]
+	return FPT.c_reorder_items(cpb_all, sort_key=FPT.get_sort_key(dataset))
 
 
 def build_conditional_fptree(dataset, item, min_spt, trans_count,
 	header_table=FPT.htab):
 	"""
+	returns:
+	pass in: conditinal pattern bases for a given transaction item,
+		filtered & sorted--ie, the result returned from sort_cpbs_by_freq
 	thin wrapper over 'build_fptree'
 	"""
 	cpb_all_filtered, _ = filter_cpbs_by_flist(item, min_spt, trans_count, header_table)
@@ -192,8 +200,8 @@ item = 'C'
 
 cpb_all = get_conditional_pattern_bases(item, FPT.htab)
 f_list = create_flist(data0, cpb_all, min_spt)
-cpb_all_filtered = filter_cpbs_by_flist(cpb_all, f_list)
-cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all_filtered, data0)
+cpb_all_filtered = filter_cpb_by_flist(cpb_all, f_list)
+cpb_all_filtered_sorted = sort_cpb_by_freq(cpb_all_filtered, data0)
 cpb_all = cpb_all_filtered_sorted
 # frequent_itemsets.append(cpb_all_filtered)
 
