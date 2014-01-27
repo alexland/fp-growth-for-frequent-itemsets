@@ -8,19 +8,6 @@ import fptree as FPT
 import fptree_query_utils as FQU
 
 
-frequent_itemsets = []
-
-
-def count_frequent_itemsets(frequent_itemsets):
-	"""
-	returns:
-	pass in:
-	"""
-	cx = CL.defaultdict(int)
-	for s in frequent_itemsets:
-		cx[s] += 1
-	return cx
-
 #------------------ recursively find frequent itemsets  --------------------#
 
 # call build_conditional_fptree, once for each unique item in htab.keys(),
@@ -39,26 +26,46 @@ def persist_frequent_itemsets(item, cpb_all, frequent_itemsets):
 			filter_cpbs_by_flist)
 		(ii) container storing all frequent itemsets
 	"""
-	fnx = lambda g: ''.join(g)
-	fis = deepcopy(cpb_all)
-	for item_set in fis:
+	def fnx(item_set, item=item):
+		"""
+		inserts original element back into itemset then stringy
+		"""
 		item_set.append(item)
-		item_set = fnx(item_set)
-		frequent_itemsets.append(item_set)
+		item_set.sort()
+		return ''.join(item_set)
+	fis = deepcopy(cpb_all)
+	for item_set, cnt in fis:
+		frequent_itemsets[fnx(item_set)] += cnt
 	return None
 
 
 def find_frequent_itemsets(item, fptree, dataset, min_spt, trans_count, header_table=FPT.htab):
     cpb_all = FQU.get_conditional_pattern_bases(item, header_table)
+    if cpb_all == []:
+    	return None
     f_list = FQU.create_flist(dataset, cpb_all, min_spt)
-    cpb_all = FQU.filter_cpbs_by_flist(cpb_all, f_list)
+    cpb_all = FQU.filter_cpb_by_flist(cpb_all, f_list)
     persist_frequent_itemsets(item, cpb_all, frequent_itemsets)
-    cpb_all = FQU.sort_cpbs_by_freq(cpb_all, dataset)
-    return frequent_itemsets
+    cpb_all = FQU.sort_cpb_by_freq(cpb_all, dataset)
+    return None
 
 
-item = 'C'
+def build_conditional_fptree(cpb_all, min_spt, item):
+	"""
+	returns: conditional fptree & header table
+	pass in:
+	"""
+	len_cpbs = len(list(cpb_all))
+	return build_fptree(dataset=cpb_all, trans_count=len_cpbs, min_spt=min_spt,
+		root_node_name=item)
+
+
+all_items = ['D', 'E', 'B', 'C', 'A']
+correct_items = ['C']
+
+# item = 'B'
 fptree = FPT.fptree
+header_table = FPT.htab
 dataset = FPT.data0
 min_spt = 0.3
 trans_count = len(dataset)
@@ -66,14 +73,13 @@ trans_count = len(dataset)
 p_find_frequent_itemsets = partial(find_frequent_itemsets,
 	min_spt=min_spt, trans_count=len(dataset))
 
-
-
-
 unique_transaction_items = list(FPT.htab.keys())
+
+frequent_itemsets = CL.defaultdict(int)
 
 for item in unique_transaction_items:
 	p_find_frequent_itemsets(item, fptree, dataset)
 
 
-FIS = frequent_itemsets
-header_table FPT.htab
+build_conditional_fptree(cpb_all, min_spt, item)
+
