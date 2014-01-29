@@ -47,6 +47,15 @@ import fptree as FPT
 
 
 
+def flatten(nested_seq, ignore_seq=(str, bytes)):
+	import collections as CL
+	for itm in nested_seq:
+		if isinstance(itm, CL.Iterable) and not isinstance(itm, ignore_seq):
+			yield from flatten(itm)
+		else:
+			yield itm
+
+
 def like_item_traversal(item, header_table=FPT.htab):
 	"""
 	returned: dict of pointers to node objects having the same
@@ -66,15 +75,6 @@ def like_item_traversal(item, header_table=FPT.htab):
 		linked_nodes[fnx(item)] = node
 		node = node.node_link
 	return linked_nodes
-
-
-def flatten(nested_seq, ignore_seq=(str, bytes)):
-	import collections as CL
-	for itm in nested_seq:
-		if isinstance(itm, CL.Iterable) and not isinstance(itm, ignore_seq):
-			yield from flatten(itm)
-		else:
-			yield itm
 
 
 def ascend_route(node, string_repr=False):
