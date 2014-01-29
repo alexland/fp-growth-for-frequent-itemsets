@@ -39,6 +39,7 @@ data0 = [
 
 import itertools as IT
 import collections as CL
+import functools as FT
 from functools import wraps
 
 import fptree as FPT
@@ -121,7 +122,7 @@ def get_conditional_pattern_bases(item, header_table=FPT.htab):
 	return cpb_all
 
 
-def create_flist(dataset, cpb_all, min_spt):
+def create_flist(cpb_all, trans_count, min_spt):
 	"""
 	returns: f-list, a dict whose keys are the items comprising the
 		  conditional pattern bases & whose values are the frequency
@@ -135,7 +136,7 @@ def create_flist(dataset, cpb_all, min_spt):
 		(iii) min_spt
 	"""
 	import math
-	min_spt = math.ceil(min_spt * len(dataset))
+	min_spt = math.ceil(min_spt * trans_count)
 	cpb_all_expanded = [(route * count) for route, count in cpb_all]
 	# restore string representation of nodes?
 	ic = FPT.item_counter(cpb_all_expanded)
@@ -153,7 +154,7 @@ def filter_cpb_by_flist(cpb_all, f_list):
 	return [ (list(filter(fnx, cpb)), cnt) for cpb, cnt in cpb_all ]
 
 
-def sort_cpb_by_freq(cpb_all, dataset):
+def sort_cpb_by_freq(cpb_all):
 	"""
 	returns: generator obj (call 'list' to recover conditional pattern bases)
 		 (list of lists) each list re-orderdered by item frequency
@@ -167,21 +168,21 @@ def sort_cpb_by_freq(cpb_all, dataset):
 	cpb_all = [ list(IT.repeat(cpb, cnt)) for cpb, cnt in cpb_all ]
 	# flatten one level
 	cpb_all = [itm for inlist in cpb_all for itm in inlist]
-	return FPT.c_reorder_items(cpb_all, sort_key=FPT.get_sort_key(dataset))
+	return FPT.c_reorder_items(cpb_all)
 
 
-def build_conditional_fptree(dataset, item, min_spt, trans_count,
-	header_table=FPT.htab):
-	"""
-	returns:
-	pass in: conditinal pattern bases for a given transaction item,
-		filtered & sorted--ie, the result returned from sort_cpbs_by_freq
-	thin wrapper over 'build_fptree'
-	"""
-	cpb_all_filtered, _ = filter_cpbs_by_flist(item, min_spt, trans_count, header_table)
-	cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all_filtered, dataset)
-	cfptree, htab = FPT.build_fptree(cpb_all_filtered_sorted, trans_count, min_spt, root_node_name=item)
-	return cfptree, htab
+# def build_conditional_fptree(dataset, item, min_spt, trans_count,
+# 	header_table=FPT.htab):
+# 	"""
+# 	returns:
+# 	pass in: conditinal pattern bases for a given transaction item,
+# 		filtered & sorted--ie, the result returned from sort_cpbs_by_freq
+# 	thin wrapper over 'build_fptree'
+# 	"""
+# 	cpb_all_filtered, _ = filter_cpbs_by_flist(item, min_spt, trans_count, header_table)
+# 	cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all_filtered, dataset)
+# 	cfptree, htab = FPT.build_fptree(cpb_all_filtered_sorted, trans_count, min_spt, root_node_name=item)
+# 	return cfptree, htab
 
 
 
@@ -195,18 +196,16 @@ def build_conditional_fptree(dataset, item, min_spt, trans_count,
 
 # frequent_itemsets = []
 
+dataset = FPT.data0
+header_table = FPT.htab
+trans_count = len(dataset)
 min_spt = 0.3
-item = 'C'
+item = 'E'
 
-cpb_all = get_conditional_pattern_bases(item, FPT.htab)
-f_list = create_flist(data0, cpb_all, min_spt)
+p_create_flist = FT.partial(create_flist, trans_count=trans_count,
+	min_spt=min_spt)
+
+cpb_all = get_conditional_pattern_bases(item, header_table)
+f_list = p_create_flist(cpb_all)
 cpb_all_filtered = filter_cpb_by_flist(cpb_all, f_list)
-cpb_all_filtered_sorted = sort_cpb_by_freq(cpb_all_filtered, data0)
-cpb_all = cpb_all_filtered_sorted
-# frequent_itemsets.append(cpb_all_filtered)
-
-
-
-# cpb_all_filtered_sorted = sort_cpbs_by_freq(cpb_all, data0)
-
-# cfptree, _ = FPT.build_fptree(list(cpb_all_filtered_sorted), len(data0), 0.3, 'E')
+cpb_all_filtered_sorted = sort_cpb_by_freq(cpb_all_filtered)
