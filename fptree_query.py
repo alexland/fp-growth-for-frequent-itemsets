@@ -52,8 +52,13 @@ def find_frequent_itemsets(item, fptree, min_spt, trans_count,
 	    persist_frequent_itemsets(item, cpb_all, frequent_itemsets)
 	    cpb_all = FQU.sort_cpb_by_freq(cpb_all)
 	    cpb_all0 = deepcopy()
-	    if max(map(len, cpb_all))
-	    return cpb_all
+	    if max(map(len, cpb_all)) > 1:
+	    	cfptree, cheader_table = build_conditional_fptree(cpb_all,
+	    		min_spt, item)
+	    	for item in f_list.items.keys():
+	    		return find_frequent_itemsets(item, cfptree, min_spt, trans_count, header_table=cheader_table)
+	    else:
+	    	return None
     # mine_fptree(cpb_all, min_spt, item)
     # return list(cpb_all), f_list
 
