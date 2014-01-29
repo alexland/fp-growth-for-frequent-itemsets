@@ -24,11 +24,9 @@ import itertools as IT
 # import exception_handling as EX
 
 
-
-# min_spt = 50000
-# dfile = "/Users/dougybarbo/Projects/data-pipeline-II/kosarak.dat"
-# with open(dfile, "r", encoding="utf-8") as fh:
-# 	pdata = [ line.strip().split() for line in fh.readlines() ]
+dfile = "/Users/dougybarbo/Projects/fp-growth-for-frequent-itemsets/data/twitter-1.csv"
+with open(dfile, "r", encoding="utf-8") as fh:
+	pdata = [ line.strip().split() for line in fh.readlines() ][:1000]
 
 data = [
     ['E', 'B', 'D', 'A'],
@@ -323,34 +321,22 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	return fptree, header_table
 
 
-def main(data):
-	tc = len(data)
+def main(dataset):
+	tc = len(dataset)
+	min_spt = 0.3
 	return build_fptree(dataset=data, trans_count=tc, min_spt=0.3, root_node_name='root')
-
-
-def fpt(tn):
-    """
-    returns: None
-    pass in: an fptree node
-    convenience function for informal, node-by-node introspection
-    of the fptree object call unbound to variable
-    """
-    if tn.node_link:
-        print("node_link? {0}".format(tn.node_link.name))
-    else:
-         print("node_link? none")
-    print("name: {0}".format(tn.name))
-    print("count: {0}".format(tn.count))
-    print("children: {0}".format(list(tn.children.keys())))
-    print("parent: {0}".format(tn.parent.name))
-    print("\n")
 
 
 # these need to be in this module's namespace so i can use them in
 # fptree_query
-fptree, htab = build_fptree(dataset=data0, trans_count=len(data0))
 
-c_reorder_items = FT.partial(reorder_items, dataset=data0)
+dataset = data0
+min_spt = 0.3
+trans_count = len(data0)
+
+# fptree, htab = build_fptree(dataset=data0, trans_count=trans_count)
+
+c_reorder_items = FT.partial(reorder_items, sort_key=get_sort_key(dataset))
 
 # if __name__ == '__main__':
 # 	# returns complete fp-tree & header table
@@ -364,5 +350,9 @@ c_reorder_items = FT.partial(reorder_items, dataset=data0)
 #
 
 
+fptree, htab = main(dataset)
 
-
+if __name__=="__main__":
+	# import cProfile
+	# cProfile.run("main(dataset)")
+	fptree, htab = main(dataset)
