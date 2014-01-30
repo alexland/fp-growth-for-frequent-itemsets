@@ -30,37 +30,16 @@ def persist_frequent_itemsets(item, cpb_all, frequent_itemsets):
 	"""
 	def fnx(item_set, item=item):
 		"""
-		inserts original element back into itemset then stringy
+		inserts original element(s) back into itemset, sorts by alpha,
+		then stringifies
 		"""
-		item_set.append(item)
+		item_set.extend(item)
 		item_set.sort()
 		return ''.join(item_set)
 	fis = deepcopy(cpb_all)
 	for item_set, cnt in fis:
-		frequent_itemsets[fnx(item_set)] += cnt
+		frequent_itemsets[fnx(item_set, item)] += cnt
 	return None
-
-
-def find_frequent_itemsets(item, fptree, min_spt, trans_count,
-	header_table=FPT.htab):
-    cpb_all = FQU.get_conditional_pattern_bases(item, header_table)
-    if cpb_all == []:
-    	return None
-    else:
-	    f_list = FQU.p_create_flist(cpb_all)
-	    cpb_all = FQU.filter_cpb_by_flist(cpb_all, f_list)
-	    persist_frequent_itemsets(item, cpb_all, frequent_itemsets)
-	    cpb_all = FQU.sort_cpb_by_freq(cpb_all)
-	    cpb_all0 = deepcopy()
-	    if max(map(len, cpb_all)) > 1:
-	    	cfptree, cheader_table = build_conditional_fptree(cpb_all,
-	    		min_spt, item)
-	    	for item in f_list.items.keys():
-	    		return find_frequent_itemsets(item, cfptree, min_spt, trans_count, header_table=cheader_table)
-	    else:
-	    	return None
-    # mine_fptree(cpb_all, min_spt, item)
-    # return list(cpb_all), f_list
 
 
 def build_conditional_fptree(cpb_all, min_spt, item):
@@ -74,7 +53,35 @@ def build_conditional_fptree(cpb_all, min_spt, item):
 	return cfptree, cheader_table
 
 
-item = 'E'
+def find_frequent_itemsets(item, fptree, min_spt, trans_count,
+	header_table=FPT.htab):
+	"""
+	returns:
+	pass in:
+	"""
+	cpb_all = FQU.get_conditional_pattern_bases(item[0], header_table)
+	if cpb_all == []:
+		return None
+	else:
+		f_list = FQU.p_create_flist(cpb_all)
+		cpb_all = FQU.filter_cpb_by_flist(cpb_all, f_list)
+		persist_frequent_itemsets(item, cpb_all, frequent_itemsets)
+		cpb_all = FQU.sort_cpb_by_freq(cpb_all)
+		# if max(map(len, cpb_all)) > 1:
+		if len(f_list.items()) > 1:
+			cpb_all = deepcopy(list(cpb_all))
+			cfptree, cheader_table = build_conditional_fptree(cpb_all,
+				min_spt, item)
+			for k in cheader_table.keys():
+				item += k
+				item = item[::-1]
+				return find_frequent_itemsets(item, cfptree, min_spt,
+					len(list(cpb_all)), header_table=cheader_table)
+		else:
+			return None
+
+
+# item = 'E'
 fptree = FPT.fptree
 header_table = FPT.htab
 dataset = FPT.data0
@@ -87,25 +94,8 @@ p_find_frequent_itemsets = partial(find_frequent_itemsets,
 	min_spt=min_spt, trans_count=len(dataset))
 
 
-def mine_fptree(fptree, header_table):
-	"""
-	returns:
-	pass in:
-	"""
-	unique_transaction_items = list(header_table.keys())
-	for item in unique_transaction_items:
-		cpb_all, f_list = p_find_frequent_itemsets(item, fptree)
-		if len(f_list.items()) > 1:
-			cfptree, chearder_table = build_conditional_fptree(cpb_all,
-				min_spt, item)
-			return mine_fptree(cfptree, cheader_table)
-
-
-
 unique_transaction_items = list(header_table.keys())
 
 for item in unique_transaction_items:
-	p_find_frequent_itemsets(item, fptree)
-
-
+	find_frequent_itemsets(item, fptree, min_spt, trans_count)
 
