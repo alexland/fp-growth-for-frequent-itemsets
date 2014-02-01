@@ -16,7 +16,8 @@ frequent_itemsets = CL.defaultdict(int)
 # then if cfptree has more than one node in it:
 # repeat the mining loop; ELSE: exit
 
-def persist_frequent_itemsets(item, cpb_all, frequent_itemsets):
+def persist_frequent_itemsets(route, cpb_all, frequent_itemsets,
+	sort_key=FPT.sort_key):
 	"""
 	returns: None, populates frequent itemset container with
 		filtered conditional pattern bases, to which the
@@ -28,74 +29,86 @@ def persist_frequent_itemsets(item, cpb_all, frequent_itemsets):
 			filter_cpbs_by_flist)
 		(ii) container storing all frequent itemsets
 	"""
-	def fnx(item_set, item=item):
-		"""
-		inserts original element(s) back into itemset, sorts by alpha,
-		then stringifies
-		"""
-		item_set.extend(item)
-		item_set.sort()
-		return ''.join(item_set)
-	fis = deepcopy(cpb_all)
-	for item_set, cnt in fis:
-		frequent_itemsets[fnx(item_set, item)] += cnt
-	return None
+	fnx = lambda q: sorted(q, key=sort_key.__getitem__)
+	freq_itemset = list(route.item + route.prefix)
+	freq_itemset = ''.join(fnx(freq_itemset))
 
-
-def build_conditional_fptree(cpb_all, min_spt, item):
-	"""
-	returns: conditional fptree & header table
-	pass in:
-	"""
-	len_cpbs = len(list(cpb_all))
-	cfptree, cheader_table = FPT.build_fptree(dataset=cpb_all,
-		trans_count=len_cpbs, min_spt=min_spt, root_node_name=item)
-	return cfptree, cheader_table
-
-
-def find_frequent_itemsets(item, fptree, min_spt, trans_count,
-	header_table=FPT.htab):
-	"""
-	returns:
-	pass in:
-	"""
-	cpb_all = FQU.get_conditional_pattern_bases(item[0], header_table)
 	if cpb_all == []:
+		frequent_itemsets[freq_itemset] = route.count
 		return None
 	else:
-		f_list = FQU.p_create_flist(cpb_all)
-		cpb_all = FQU.filter_cpb_by_flist(cpb_all, f_list)
-		persist_frequent_itemsets(item, cpb_all, frequent_itemsets)
-		cpb_all = FQU.sort_cpb_by_freq(cpb_all)
-		# if max(map(len, cpb_all)) > 1:
-		if len(f_list.items()) > 1:
-			cpb_all = deepcopy(list(cpb_all))
-			cfptree, cheader_table = build_conditional_fptree(cpb_all,
-				min_spt, item)
-			for k in cheader_table.keys():
-				item += k
-				item = item[::-1]
-				return find_frequent_itemsets(item, cfptree, min_spt,
-					len(list(cpb_all)), header_table=cheader_table)
+		fis = deepcopy(cpb_all)
+		for item_set in fis:
+			item_set = ''.join(fnx(freq_itemset))
+			frequent_itemsets[freq_itemset] += 1
+
+class Route:
+	__slots__ = ['node', 'count', 'prefix']
+	def __init__(self, node, count, prefix):
+		self.node = node
+		self.count = count
+		self.prefix = prefix
+
+def find_frequent_itemsets(route_tpl, fptree, min_spt=MIN_SPT, trans_count,
+	header_table=FPT.htab):
+	"""
+	returns: None, recursive fn that populates a dict, frequent_itemsets
+	pass in:
+		(i) 	instance of the class Route, instantiated by calling
+				the constructor and passing in a 3-tuple:
+				(item, count, route)
+		(ii)	fptree or conditional fptree
+		(iii) 	minimum support (fixed)
+		(iv)  	length of dataset
+		(v) 	header table for fptree or conditional fptree
+	"""
+	cpb_all = FQU.get_conditional_pattern_bases(route.node, header_table)
+	f_list = FQU.p_create_flist(cpb_all)
+	cpb_all = FQU.filter_cpb_by_flist(cpb_all, f_list)
+	cpb_all = FQU.sort_cpb_by_freq(cpb_all)
+	cpb_all = deepcopy(list(cpb_all))
+	if cpb_all == []:
+		persist_frequent_itemsets(route, cpb_all, frequent_itemsets)
+	else:
+		tc = len(cpb_all)
+		cfptree, cheader_table = FPT.build_fptree(cpb_all, tc, min_spt, route.node)
+		if len(cheader_table) == 1:
+			persist_frequent_itemsets(route, cpb_all, frequent_itemsets)
 		else:
-			return None
+			print(f_list)
+			for k, v in f_list.items():
+				route.prefix += k
+				find_frequent_itemsets(route, cfptree, MIN_SPT, tc, cheader_table)
+
 
 
 # item = 'E'
 fptree = FPT.fptree
 header_table = FPT.htab
 dataset = FPT.data0
-min_spt = 0.3
+MIN_SPT = 0.3
 trans_count = len(dataset)
 
 frequent_itemsets = CL.defaultdict(int)
 
 p_find_frequent_itemsets = partial(find_frequent_itemsets,
-	min_spt=min_spt, trans_count=len(dataset))
+	min_spt=MIN_SPT, trans_count=len(dataset))
 
 
-unique_transaction_items = list(header_table.keys())
+def mine_fptree(unique_transaction_items=list(header_table.keys()),
+	fptree=fptree, min_spt=MIN_SPT, trans_count=trans_count):
+	"""
+	returns:
+	pass in:
+	"""
+	for item in unique_transaction_items:
+		find_frequent_itemsets(item, fptree, min_spt=MIN_SPT, trans_count)
+
+
+unique_transaction_items=list(header_table.keys())
 
 for item in unique_transaction_items:
-	find_frequent_itemsets(item, fptree, min_spt, trans_count)
+	route = Route(item, 0, '')
+	find_frequent_itemsets(route, fptree, min_spt=MIN_SPT, trans_count)
 
+# find_frequent_itemsets('E', fptree, MIN_SPT, trans_count)
