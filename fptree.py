@@ -21,6 +21,8 @@ from operator import itemgetter
 import functools as FT
 import itertools as IT
 
+MIN_SPT = 0.3
+
 # import exception_handling as EX
 
 
@@ -156,13 +158,13 @@ def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 	pass in:
 		(i) dataset (the raw dataset)
 		(ii) dict w/ items for keys, values are item frequency,
-			returned by call to 'item_counter', for queries this
-			is probably an 'f-list', built by 'item_counter'
+			returned by call to item_counter, for queries this
+			is probably an f-list, built by item_counter
 		(iii) min_spt (float, eg, 0.03 means each item must appear in
 			at least 3% of the dataset)
 		(iv) total number of transactions
 	removes any item from every transaction if that item's total freq
-	is below 'min_spt'
+	is below min_spt
 	to call this fn, bind the call to two variables, like so:
 	filtered_trans, item_count_dict = filter_by_min_spt(...)
 	"""
@@ -299,7 +301,7 @@ def add_nodes(trans, header_table, parent_node):
 def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	"""
 	pass in:
-		(i) raw data (list of dataset one transcation per list)
+		(i) raw data (list of lists; one transcation per list)
 		(ii) transaction count in original dataset
 		(iii) minimum support (0=<min_spt>1)
 		(iv) name of root node (str)
@@ -311,7 +313,7 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	fptree = TreeNode(root_node_name, None)
 	root = fptree
 	header_table, dataset = config_fptree_builder(dataset, trans_count,
-								min_spt)
+		min_spt)
 	for trans in dataset:
 		add_nodes(trans, header_table, root)
 	# trim the headertable so it includes just the first node_link
@@ -323,15 +325,16 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 
 def main(dataset):
 	tc = len(dataset)
-	min_spt = 0.3
-	return build_fptree(dataset=data, trans_count=tc, min_spt=0.3, root_node_name='root')
+	MIN_SPT = 0.3
+	return build_fptree(dataset=data, trans_count=tc, min_spt=0.3,
+		root_node_name='root')
 
 
 # these need to be in this module's namespace so i can use them in
 # fptree_query
 
 dataset = data0
-min_spt = 0.3
+MIN_SPT = 0.3
 trans_count = len(data0)
 
 # fptree, htab = build_fptree(dataset=data0, trans_count=trans_count)
@@ -349,6 +352,8 @@ c_reorder_items = FT.partial(reorder_items, sort_key=get_sort_key(dataset))
 # 		print(c)
 #
 
+
+sort_key=get_sort_key(dataset)
 
 fptree, htab = main(dataset)
 
