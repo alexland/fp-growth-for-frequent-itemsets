@@ -27,9 +27,18 @@ route.root = route.node
 route.node = k
 route.count = header_table[k][0]
 
-# print(route)
 
-S = []
+class Route:
+	__slots__ = ['node', 'prefix_path', 'root', 'count']
+	def __init__(self, node, prefix_path, root, count):
+		self.node = node
+		self.prefix_path = CL.deque(prefix_path)
+		self.root = root
+		self.count = count
+
+	def __repr__(self):
+		return "node: {0}  prefix_path: {1}  root: {2}  count: {3}".format(
+			self.node, self.prefix_path, self.root, self.count)
 
 def persist(route, sort_key=FPT.sort_key):
     fnx = lambda q: sorted(q, key=sort_key.__getitem__)
@@ -37,24 +46,84 @@ def persist(route, sort_key=FPT.sort_key):
     freq = route.count
     return {freq_itemset: freq}
 
-def update_route(route, f_list, k):
-    route.prefix_path.appendleft(route.root)
-    route.root = route.node
-    route.node = k
-    route.count = f_list[k]
+def update_route(route, k, f_list=header_table):
+	route.prefix_path.appendleft(route.root)
+	route.root = route.node
+	route.node = k
+	count = f_list[k]
+	if isinstance(count, list):
+		count = count[0]
+		route.count = count
+	return route
 
-def get_cpbs(route, header_table):
-    cpb_all = get_conditional_pattern_bases(route.node, header_table=FPT.htab)
-    f_list = p_create_flist(cpb_all)
-    cpb_all = filter_cpb_by_flist(cpb_all, f_list)
-    cpb_all = sort_cpb_by_freq(cpb_all)
-    cpb_all = deepcopy(list(cpb_all))
-    if cpb_all == []:
-        print(persist(route))
-    else:
-        cfptree, cheader_table = FPT.build_fptree(cpb_all, len(cpb_all), min_spt, route.node)
-        # for k in cheader_table.keys():
-            # update_route(route, f_list, k)
-            # cpb_all, f_list = get_cpbs(route, cheader_table)
+def get_cpbs(route, header_table=FPT.htab, f_list=FPT.htab):
+	cpb_all = get_conditional_pattern_bases(route.node, header_table=FPT.htab)
+	f_list = p_create_flist(cpb_all)
+	cpb_all = filter_cpb_by_flist(cpb_all, f_list)
+	cpb_all = sort_cpb_by_freq(cpb_all)
+	cpb_all = deepcopy(list(cpb_all))
+	if cpb_all == []:
+		print(persist(route))
+		return None
+	else:
+		return cpb_all, f_list
 
-cpb_all, f_list = get_cpbs(route, header_table)
+
+#----------------#
+
+#----- top level: iterating over unique transaction items ------#
+
+for k in header_table.keys():
+
+	# initialize the route:
+	route = Route('', '', '', 0)
+
+	# update the route:
+	update_route(route, k)
+
+	# calculate conditional pattern bases:
+	x = get_cpbs(route, cheader_table)
+	if not x:
+		# persist frequent itemsets & 'continue', ie break out of this loop &
+		# go to next key in header_table.keys()
+		persist(route, sort_key=FPT.sort_key)
+		print("recursion path terminated; frequent itemsets persisted")
+		continue
+	else:
+		cpb_all, f_list = x
+		print("continue recursion")
+
+		for k in f_list.keys():
+
+			# build fptree from conditional pattern bases:
+			cfptree, cheader_table = build_fptree(cpb_all, len(cpb_all), min_spt, k)
+			# update the route:
+			update_route(route, k, f_list)
+			# get conditional pattern bases of new conditional fptree:
+			x = get_cpbs(route, cheader_table)
+			if not x:
+				persist(route, sort_key=FPT.sort_key)
+				print("recursion path terminated AND frequent itemsets persisted")
+			else:
+				cpb_all, f_list = x
+				print("continue recursion")
+				# current state of route is correct to continue recursion
+
+
+
+
+
+# updating the route (using example of 'A'):
+	# begin at top level
+	# loop initialized for its context (loop)
+	r0 = Route('', '', '', 0)
+	k = 'A'					#  a unique transaction item
+	update_route(route_init, k)
+
+		# next level
+		# init set to route's val when exit enclosing loop
+		for k in f_list.keys():
+			# loops twice once for 'B', once for 'D', but
+			# route is initialized each time
+			route_init = route
+			update_route(route_init, k)
