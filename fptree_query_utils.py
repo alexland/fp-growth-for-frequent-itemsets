@@ -122,27 +122,25 @@ def get_conditional_pattern_bases(item, header_table=FPT.htab):
 	return cpb_all
 
 
-def create_flist(cpb_all, trans_count, min_spt):
+def create_flist(cpb_all, min_spt):
 	"""
 	returns: f-list, a dict whose keys are the items comprising the
 		  conditional pattern bases & whose values are the frequency
 		  of the nodes ('count' attr) in the conditional fptree;
 		  items in the f-list are filtered against min_spt before returned
 	pass in:
-		(i) original dataset
-		(ii) conditional pattern bases for a given unique item in the
+		(i) conditional pattern bases for a given unique item in the
 			transacdtions, this nested list is the value returned
 			from calling get_conditional_pattern_bases
-		(iii) min_spt
+		(ii) min_spt
 	"""
 	import math
-	min_spt = math.ceil(min_spt * trans_count)
+	min_spt_cnt = math.ceil(min_spt * len(cpb_all))
 	cpb_all_expanded = [(route * count) for route, count in cpb_all]
-	# restore string representation of nodes?
+	cpb_all_expanded = list(flatten(cpb_all_expanded))
 	ic = FPT.item_counter(cpb_all_expanded)
-	# now filter by min spt
-	# translate mnin_spt to actual count (eg, 3)
-	return {k:v for k,v in ic.items() if v >= min_spt}
+	# filter by min_spt translated to actual count, abs_ms
+	return {k:v for k,v in ic.items() if v >= min_spt_cnt}
 
 
 def filter_cpb_by_flist(cpb_all, f_list):
