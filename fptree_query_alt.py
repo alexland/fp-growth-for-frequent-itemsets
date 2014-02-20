@@ -44,7 +44,7 @@ class Route:
 def persist(route, header_table, sort_key=FPT.sort_key):
     fnx = lambda q: sorted(q, key=sort_key.__getitem__)
     freq_itemset = route.node + ''.join(list(route.path))
-    freq = header_table[route.node][0]
+    freq = header_table[route.node]
     return {freq_itemset: freq}
 
 def update_route(route, k):
@@ -84,7 +84,7 @@ for k in header_table.keys():
 	if not x:
 		# persist frequent itemsets & 'continue', ie break out of this loop &
 		# go to next key in header_table.keys()
-		persist(r1k, sort_key=FPT.sort_key)
+		persist(r1k, header_table, sort_key=FPT.sort_key)
 		print("recursion path terminated; frequent itemsets persisted")
 		continue
 	else:
@@ -106,13 +106,18 @@ for k in header_table.keys():
 
 
 
-def get_cpbs(route, header_table=FPT.htab):
-	cpb_all = get_conditional_pattern_bases(route.node, header_table=FPT.htab)
-	f_list = p_create_flist(cpb_all)
-	cpb_all = filter_cpb_by_flist(cpb_all, f_list)
-	cpb_all = sort_cpb_by_freq(cpb_all)
-	cpb_all = deepcopy(list(cpb_all))
-	return cpb_all, f_list
+def get_cpbs(k, trans_count=len(dataset), min_spt=MIN_SPT, header_table=FPT.htab):
+	def is_empty(alist):
+		if len(alist) == 0:
+			return True
+	cpb_all = get_conditional_pattern_bases(k, header_table=FPT.htab)
+	if is_empty(cpb_all):
+		return None
+	else:
+		f_list = create_flist(cpb_all=cpb_all, min_spt=MIN_SPT, trans_count=trans_count)
+		cpb_all = sort_cpb_by_freq(cpb_all)
+		cpb_all = deepcopy(list(cpb_all))
+		return cpb_all, f_list
 
 
 def mine_tree(route=Route(), f_list=FPT.htab):
