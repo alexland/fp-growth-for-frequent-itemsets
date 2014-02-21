@@ -32,6 +32,9 @@ frequent_itemsets = CL.defaultdict(int)
 unique_items = header_table.keys()
 
 
+
+
+
 class Route:
 	__slots__ = ['node', 'path']
 	def __init__(self, node, path):
@@ -41,36 +44,9 @@ class Route:
 	def __repr__(self):
 		return "node: {0}  path: {1}".format(self.node, self.path)
 
-def persist(route, header_table, sort_key=FPT.sort_key):
-    fnx = lambda q: sorted(q, key=sort_key.__getitem__)
-    freq_itemset = route.node + ''.join(list(route.path))
-    freq = header_table[route.node]
-    return {freq_itemset: freq}
 
-def update_route(route, k):
-    new_route = Route('', '')
-    new_route.path.appendleft(route.node)
-    new_route.node = k
-    return new_route
 
-# def get_cpbs(route, header_table=FPT.htab):
-# 	cpb_all = get_conditional_pattern_bases(route.node, header_table=FPT.htab)
-# 	f_list = p_create_flist(cpb_all)
-# 	cpb_all = filter_cpb_by_flist(cpb_all, f_list)
-# 	cpb_all = sort_cpb_by_freq(cpb_all)
-# 	cpb_all = deepcopy(list(cpb_all))
-# 	if cpb_all == []:
-# 		print(persist(route))
-# 		return None
-# 	else:
-# 		cpb_all, f_list
-# 		for k in f_list.keys():
-# 			cfptree, cheader_table = build_fptree(cpb_all, len(cpb_all), min_spt,
-# 				route.node)
-# 			udpate_route()
-# 			return get_cpbs(route, cheader_table)
 
-#----------------#
 
 #----- top level: iterating over unique transaction items ------#
 
@@ -120,10 +96,10 @@ def get_cpbs(k, trans_count=len(dataset), min_spt=MIN_SPT, header_table=FPT.htab
 		return cpb_all, f_list
 
 
-def mine_tree(route=Route(), f_list=FPT.htab):
+def mine_tree(p=[], f_list=FPT.htab, c=0):
 	for k in f_list.keys():
-		r1 = update_route(route, k)
-		print(r1)
+		p1 = deepcopy(p)
+		print('{0:>{1}}'.format(path, c))
 		x = get_cpbs(r1, header_table)
 		if not x:
 			print(persist(r1, f_list, sort_key=FPT.sort_key))
@@ -132,21 +108,57 @@ def mine_tree(route=Route(), f_list=FPT.htab):
 			cpb_all, f_list = x
 			cfptree, cheader_table = build_fptree(cpb_all, len(cpb_all),
 				min_spt, k)
-			mine_tree(route=r1, f_list)
+			p.append(k)
+			mine_tree(p, f_list, c=c+5)
 
 
 
 
-# updating the route (using example of 'A'):
-	# begin at top level
-	# loop initialized for its context (loop)
-	r_init = Route('', '', '', 0)
-	k = 'A'					#  a unique transaction item
-	rA = update_route(route_init, k)
+#------------------ latest iteration ---------#
 
-		# next level
-		# init set to route's val when exit enclosing loop
-		r_init = rA
-		for k in f_list.keys():
-			# loops twice once for 'B', once for 'D', but
-			rAB = update_route(rA, 'B', f_list)
+FP = []
+
+
+def gather_nodes(node, N=[]):
+    nx = node.children
+    if len(nx) == 0:
+        return N
+    else:
+        for n in nx.keys():
+            N.append(n)
+            gather_nodes(node.children[n], N)
+    return N
+
+
+def persist_freq_patterns(path, f_list):
+    k = ''.join(path)
+    q = path[-1]
+    v = f_list[q]
+    return {k:v}
+
+
+def mine_tree(p=[], f_list=FPT.htab, min_spt=MIN_SPT, trans_count=len(dataset)):
+	for k in f_list.keys():
+		p1 = deepcopy(p)
+		p1.append(k)
+		print('{0:>{1}}'.format(p1, c))
+		if (len(fptree.children) == 0) | len(gather_nodes(fptree)) <= 1:
+			print("iteration terminated")
+			print(persist_freq_patterns(p1, f_list))
+			continue
+
+		else:
+			cpb_all = get_conditional_pattern_bases(k, header_table=header_table)
+			f_list = create_flist(cpb_all=cpb_all, min_spt=MIN_SPT,
+				trans_count=trans_count)
+			cpb_all = filter_cpb_by_flist(cpb_all, f_list)
+			cpb_all = sort_cpb_by_freq(cpb_all)
+			cpb_all = deepcopy(list(cpb_all))
+			if len(cpb_all) == 0:
+                print("iteration terminated")
+                fp = persist_freq_patterns(p1, f_list)
+                FP.append(fp)
+                continue
+            else:
+				cfptree, chtab = build_fptree(cpb_all, len(cpb_all), MIN_SPT, k)
+				mine_tree(p1, f_list, min_spt)
