@@ -13,15 +13,7 @@ os.chdir(ddir)
 %run fptree_query_utils
 %run fptree_query
 
-route = Route('', '', '', 0)
 
-fptree = FPT.fptree
-header_table = FPT.htab
-dataset = FPT.data0
-MIN_SPT = 0.3
-trans_count = len(dataset)
-
-k = 'A'
 fptree = FPT.fptree
 header_table = FPT.htab
 dataset = FPT.data
@@ -137,28 +129,47 @@ def persist_freq_patterns(path, f_list):
     return {k:v}
 
 
-def mine_tree(p=[], f_list=FPT.htab, min_spt=MIN_SPT, trans_count=len(dataset)):
-	for k in f_list.keys():
-		p1 = deepcopy(p)
-		p1.append(k)
-		print('{0:>{1}}'.format(p1, c))
-		if (len(fptree.children) == 0) | len(gather_nodes(fptree)) <= 1:
-			print("iteration terminated")
-			print(persist_freq_patterns(p1, f_list))
-			continue
+def cpbs(k, header_table, MIN_SPT, trans_count):
+	cpb_all = get_conditional_pattern_bases(k, header_table=header_table)
+	if len(cpb_all) == 0:
+		return None
+	else:
+		f_list = create_flist(cpb_all=cpb_all, min_spt=MIN_SPT,trans_count=trans_count)
+		cpb_all = filter_cpb_by_flist(cpb_all, f_list)
+		cpb_all = sort_cpb_by_freq(cpb_all)
+		cpb_all = deepcopy(list(cpb_all))
+	return cpb_all, f_list
 
-		else:
-			cpb_all = get_conditional_pattern_bases(k, header_table=header_table)
-			f_list = create_flist(cpb_all=cpb_all, min_spt=MIN_SPT,
-				trans_count=trans_count)
-			cpb_all = filter_cpb_by_flist(cpb_all, f_list)
-			cpb_all = sort_cpb_by_freq(cpb_all)
-			cpb_all = deepcopy(list(cpb_all))
-			if len(cpb_all) == 0:
-                print("iteration terminated")
-                fp = persist_freq_patterns(p1, f_list)
-                FP.append(fp)
-                continue
-            else:
-				cfptree, chtab = build_fptree(cpb_all, len(cpb_all), MIN_SPT, k)
-				mine_tree(p1, f_list, min_spt)
+
+def mine_tree(p=CL.deque([]), header_table=FPT.htab, min_spt=MIN_SPT, trans_count=len(dataset),
+              c=0, f_list=FPT.htab):
+    for k in header_table.keys():
+        # print('c = {}'.format(c))
+        p1 = deepcopy(p)
+        p1.appendleft(k)
+        q = ''.join(p1)
+        # print('{0:>{1}}'.format(q, c))
+        x = cpbs(k, header_table, MIN_SPT, trans_count)
+        if x:
+            cpb_all, f_list = x
+            # print("f_list: {}".format(f_list))
+            cfptree, chtab = build_fptree(cpb_all, len(cpb_all), MIN_SPT, k)
+            mine_tree(p=p1, header_table=chtab, min_spt=MIN_SPT, trans_count=trans_count,
+                      c=c+5, f_list=f_list)
+        elif not x:
+            # print(header_table)
+            q = ''.join(p1)
+            fis = q + str(header_table[k][0])
+            FIS.append(fis)
+            print('fis: {}: {}'.format(q, header_table[k][0]))
+            q1 = q[1:]
+            fis = q1
+            print('fis: {}: '.format(q1))
+            FIS.append(fis)
+            # print(fmt.format('iteration complete', width))
+            k = 'key: ' + k
+            # print('{0:>{1}}'.format(k, c))
+            # print('{0:>{1}}'.format(fis, c))
+            # print(fmt.format(fis, width))
+            print("\n")
+            continue
