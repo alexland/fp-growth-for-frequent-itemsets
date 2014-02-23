@@ -142,6 +142,8 @@ def cpbs(k, header_table, MIN_SPT, trans_count):
 
 FIS = []
 
+
+
 def mine_tree(p=CL.deque([]), header_table=FPT.htab, min_spt=MIN_SPT, trans_count=len(dataset),
               c=0, f_list=FPT.htab):
     for k in f_list.keys():
@@ -149,32 +151,21 @@ def mine_tree(p=CL.deque([]), header_table=FPT.htab, min_spt=MIN_SPT, trans_coun
         p1.appendleft(k)
         q = ''.join(p1)
         x = cpbs(k, header_table, MIN_SPT, trans_count)
-        if len(q) > 1:
-            fis = q + str(header_table[k][0])
-            # print('fis: {}: {}'.format(q, f_list[k]))
-            FIS.append(fis)
         if x:
             cpb_all_, f_list_ = x
             q = ''.join(p1)
             print('path: {}'.format(q))
-            # print('f_list {}'.format(f_list))
             if len(q) > 1:
-                fis = q + str(header_table[k][0])
+                fis = q + ':' + str(header_table[k][0])
                 print('fis: {}: {}'.format(q, f_list[k]))
+                FIS.append(fis)
             cfptree, chtab = build_fptree(cpb_all_, len(cpb_all_), MIN_SPT, k)
             mine_tree(p=p1, header_table=chtab, min_spt=MIN_SPT, trans_count=trans_count,
                       c=c+5, f_list=f_list_)
         elif not x:
             q = ''.join(p1)
             if len(q) > 1:
-                fis = q + str(header_table[k][0])
+                fis = q + ':' + str(header_table[k][0])
                 print('fis: {}: {}'.format(q, header_table[k][0]))
                 FIS.append(fis)
-            # q1 = q[1:]
-            # fis = q1
-            # if len(fis) > 1:
-                # print('fis: {}: '.format(q1))
-                # FIS.append(fis)
-            # k = 'key: ' + k
-            print("\n")
             continue
