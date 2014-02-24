@@ -248,18 +248,33 @@ def main(dataset):
 		min_spt=MIN_SPT, root_node_name='root')
 
 
+def load_data(dfile=None):
+	if dfile:
+		with open(dfile, "r", encoding="utf-8") as fh:
+			return [ map(int, line.strip().split(',')) for line in
+				fh.readlines() ][:100]
+	else:
+		import string
+		import random as RND
+		dataset = [
+			    ['E', 'B', 'D', 'A'],
+				['E', 'A', 'D', 'C', 'B'],
+				['C', 'E', 'B', 'A'],
+				['A', 'B', 'D'],
+				['D'],
+				['D', 'B'],
+				['D', 'A', 'E'],
+				['B', 'C'],
+			]
+		p = list(string.ascii_uppercase[:5])
+		fnx = lambda: RND.randint(2, 5)
+		ds = [ RND.sample(p, fnx()) for c in range(1000) ]
+		ds.extend(dataset)
+		RND.shuffle(ds)
+		len(ds)
+	return ds
 
-dataset = [
-	    ['E', 'B', 'D', 'A'],
-		['E', 'A', 'D', 'C', 'B'],
-		['C', 'E', 'B', 'A'],
-		['A', 'B', 'D'],
-		['D'],
-		['D', 'B'],
-		['D', 'A', 'E'],
-		['B', 'C'],
-	]
-
+dataset = load_data()
 TRANS_COUNT = len(dataset)
 MIN_SPT = 0.3
 SORT_KEY=get_sort_key(dataset)
@@ -278,8 +293,6 @@ if __name__=="__main__":
 	c_reorder_items = FT.partial(reorder_items,
 		sort_key=get_sort_key(dataset))
 	fptree, htab = main(dataset)
-
-
 
 
 
