@@ -21,86 +21,6 @@ from operator import itemgetter
 import functools as FT
 import itertools as IT
 
-MIN_SPT = 0.3
-
-# import exception_handling as EX
-
-
-dfile = "/Users/dougybarbo/Projects/fp-growth-for-frequent-itemsets/data/twitter-1.csv"
-with open(dfile, "r", encoding="utf-8") as fh:
-	pdata = [ line.strip().split() for line in fh.readlines() ][:1000]
-
-data = [
-    ['E', 'B', 'D', 'A'],
-	['E', 'A', 'D', 'C', 'B'],
-	['C', 'E', 'B', 'A'],
-	['A', 'B', 'D'],
-	['D'],
-	['D', 'B'],
-	['D', 'A', 'E'],
-	['B', 'C'],
-]
-
-data0 = [
-	['B', 'E', 'B', 'D', 'A'],
-	['E', 'A', 'D', 'C', 'B'],
-	['C', 'E', 'B', 'A'],
-	['A', 'B', 'D'],
-	['D'],
-	['D', 'B'],
-	['D', 'A', 'E'],
-	['B', 'C'],
-]
-
-
-data1 = [
-	['B', 'D', 'E', 'A', 'E'],
-	['B', 'D', 'A', 'A', 'E', 'C'],
-	['B', 'A', 'C', 'E', 'C'],
-	['B', 'D', 'A', 'B'],
-	['D'],
-	['B', 'D', 'B'],
-	['D', 'A', 'E', 'A', 'A'],
-	['B', 'C', 'C', 'C', 'C']
-]
-
-
-
-dataset1 = [
-	['E', 'B', 'D', 'A'],
-	['E', 'A', 'D', 'C', 'B'],
-	['C', 'E', 'B', 'A'],
-	['A', 'B', 'D'],
-	['D'],
-	['D', 'B'],
-	['D', 'A', 'E'],
-	['B', 'C'],
-]
-
-dataset2 = [
-    ['C', 'A', 'T', 'S'],
-	['C', 'A', 'T', 'S', 'U', 'P'],
-	['C', 'A', 'T'],
-	['C', 'A', 'T', 'C', 'H'],
-	['C', 'A', 'T', 'A', 'N'],
-	['C', 'A', 'T', 'N', 'I', 'P'],
-	['C', 'A', 'T', 'E', 'G', 'O', 'R', 'Y'],
-	['C', 'A', 'T', 'I', 'O', 'N'],
-	['C', 'A', 'T', 'A', 'P', 'U', 'L', 'T'],
-	['C', 'A', 'T', 'C', 'H', 'Y'],
-	['C', 'A', 'T', 'A', 'L', 'O', 'G'],
-	['C', 'A', 'T', 'E', 'R'],
-	['C', 'A', 'T', 'S'],
-	['C', 'A', 'T', 'A', 'R', 'A', 'C', 'T'],
-	['C', 'A', 'T', 'T', 'L', 'E'],
-	['A', 'T', 'O', 'M'],
-	['E', 'R', 'R', 'O', 'R'],
-	['A', 'T', 'M'],
-	['L', 'E', 'A', 'R', 'N'],
-	['T', 'E', 'R', 'M'],
-	['A', 'T', 'T', 'A', 'C', 'H']
-]
-
 
 #---------------------- building the fp-tree -----------------------#
 
@@ -324,40 +244,42 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 
 
 def main(dataset):
-	tc = len(dataset)
-	MIN_SPT = 0.3
-	return build_fptree(dataset=data, trans_count=tc, min_spt=0.3,
-		root_node_name='root')
+	return build_fptree(dataset=dataset, trans_count=TRANS_COUNT,
+		min_spt=MIN_SPT, root_node_name='root')
 
 
-# these need to be in this module's namespace so i can use them in
-# fptree_query
 
-dataset = data0
+dataset = [
+	    ['E', 'B', 'D', 'A'],
+		['E', 'A', 'D', 'C', 'B'],
+		['C', 'E', 'B', 'A'],
+		['A', 'B', 'D'],
+		['D'],
+		['D', 'B'],
+		['D', 'A', 'E'],
+		['B', 'C'],
+	]
+
+TRANS_COUNT = len(dataset)
 MIN_SPT = 0.3
-trans_count = len(data0)
-
-# fptree, htab = build_fptree(dataset=data0, trans_count=trans_count)
-
-c_reorder_items = FT.partial(reorder_items, sort_key=get_sort_key(dataset))
-
-# if __name__ == '__main__':
-# 	# returns complete fp-tree & header table
-# 	fptree, htab = main(data)
-#
-# 	A1 = fptree.children['A']
-# 	# for k, v in htab.items():
-# # 		print("{0}\t{1}".format(k, v[0]))
-# 	for c in fptree.children.keys():
-# 		print(c)
-#
-
-
-sort_key=get_sort_key(dataset)
+SORT_KEY=get_sort_key(dataset)
+c_reorder_items = FT.partial(reorder_items,
+	sort_key=get_sort_key(dataset))
 
 fptree, htab = main(dataset)
+
 
 if __name__=="__main__":
 	# import cProfile
 	# cProfile.run("main(dataset)")
+	TRANS_COUNT = len(dataset)
+	MIN_SPT = 0.3
+	SORT_KEY=get_sort_key(dataset)
+	c_reorder_items = FT.partial(reorder_items,
+		sort_key=get_sort_key(dataset))
 	fptree, htab = main(dataset)
+
+
+
+
+
