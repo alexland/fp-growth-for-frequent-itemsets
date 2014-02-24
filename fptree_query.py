@@ -4,6 +4,7 @@
 from copy import deepcopy
 import collections as CL
 from functools import partial
+
 import fptree as FPT
 import fptree_query_utils as FQU
 
@@ -50,7 +51,7 @@ FIS = []
 
 
 
-def mine_tree(p=CL.deque([]), header_table=FPT.htab, min_spt=MIN_SPT, trans_count=len(dataset),
+def mine_tree(p=CL.deque([]), header_table=FPT.htab, min_spt=FPT.MIN_SPT, trans_count=len(FPT.dataset),
               c=0, f_list=FPT.htab):
     for k in f_list.keys():
         p1 = deepcopy(p)
