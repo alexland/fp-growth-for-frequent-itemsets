@@ -3,10 +3,138 @@
 
 from copy import deepcopy
 import collections as CL
+import itertools as IT
+import functools as FT
 from functools import partial
+from functools import wraps
 
 import fptree as FPT
-import fptree_query_utils as FQU
+
+
+
+def flatten(nested_seq, ignore_seq=(str, bytes)):
+	"""
+	flattens a nested sequence
+	"""
+	import collections as CL
+	for itm in nested_seq:
+		if isinstance(itm, CL.Iterable) and not isinstance(itm, ignore_seq):
+			yield from flatten(itm)
+		else:
+			yield itm
+
+
+def like_item_traversal(item, header_table=FPT.htab):
+	"""
+	returned: dict of pointers to node objects having the same
+		'name' attribute as 'item' keys are the node's name attribute w/
+		incremented integer appended (to ensure unique), values are the
+		node pointers that correspond to that node
+	pass in:
+		(i) str/int representation of a given unique transaction item
+		(ii) header table (from fptree built from original transaction data)
+	"""
+	linked_nodes = {}
+	keys = []
+	c = IT.count()
+	fnx = lambda a: "{0}{1}".format(item, next(c))
+	node = header_table[item][-1]
+	while node != None:
+		linked_nodes[fnx(item)] = node
+		node = node.node_link
+	return linked_nodes
+
+
+def ascend_route(node, string_repr=False):
+	"""
+	returns: all nodes in a given route from the node passed in
+		to the root
+	pass in: a single node in an fp-tree
+	note: setting 'string_repr to True will return 'node.name' attribute
+		rather than the node pointer itself
+	"""
+	node_route = []
+	while node != None:
+		if string_repr:
+			node_route.append(node.name)
+		else:
+			node_route.append(node)
+		node = node.parent
+	return node_route
+
+
+def get_conditional_pattern_bases(item, header_table=FPT.htab):
+	"""
+	returns: a list of tuples, each tuple comprised of a conditional pattern base
+	(node route) and the count for that cpb
+	pass in:
+		(i) str/int representation of a given unique transaction item
+		(ii) header table
+	this fn transforms a raw 'route' from 'ascend_tree' into a cpb in 2
+		steps:
+			(i) remove start & terminus
+			(ii) reverse the order of the items
+	'string_repr' flag should be set to 'False', *except*
+	for use in de-bugging, unit test, etc.
+
+	"""
+	cpb_all = []
+	fnx = lambda n: n.name
+	linked_nodes = like_item_traversal(item, header_table)
+	for node in linked_nodes.values():
+		route = ascend_route(node, string_repr=False)
+		if len(route) > 2:
+			cnt = route[0].count
+			cpb = route[1:-1][::-1]
+			cpb_all.append((list(map(fnx, cpb)), cnt))
+	return cpb_all
+
+
+def create_flist(cpb_all, trans_count, min_spt):
+	"""
+	returns: f-list, a dict whose keys are the items comprising the
+		  conditional pattern bases & whose values are the frequency
+		  of the nodes ('count' attr) in the conditional fptree;
+		  items in the f-list are filtered against min_spt before returned
+	pass in:
+		(i) conditional pattern bases for a given unique item in the
+			transacdtions, this nested list is the value returned
+			from calling get_conditional_pattern_bases
+		(ii) min_spt
+	"""
+	import math
+	min_spt_ct = math.ceil(min_spt * trans_count)
+	cpb_all_expanded = [(route * count) for route, count in cpb_all]
+	cpb_all_expanded = list(flatten(cpb_all_expanded))
+	ic = FPT.item_counter(cpb_all_expanded)
+	# filter by min_spt translated to actual count, abs_ms
+	return {k:v for k,v in ic.items() if v >= min_spt_ct}
+
+
+def filter_cpb_by_flist(cpb_all, f_list):
+	"""
+	returns:
+	pass in:
+	"""
+	fnx = lambda q: q in list(f_list.keys())
+	return [ (list(filter(fnx, cpb)), cnt) for cpb, cnt in cpb_all ]
+
+
+def sort_cpb_by_freq(cpb_all):
+	"""
+	returns: generator obj (call 'list' to recover conditional pattern bases)
+		 (list of lists) each list re-orderdered by item frequency
+		 from original dataset
+	pass in:
+		(i) filtered conditional pattern bases (list of lists),
+			returned from call to filterd_cpbs_by_flist
+		(ii) original dataset
+	"""
+	# expand each [cpb, count]
+	cpb_all = [ list(IT.repeat(cpb, cnt)) for cpb, cnt in cpb_all ]
+	# flatten one level
+	cpb_all = [itm for inlist in cpb_all for itm in inlist]
+	return FPT.c_reorder_items(cpb_all)
 
 
 #------------------ recursively find frequent itemsets  --------------------#
@@ -73,7 +201,7 @@ def mine_tree(p=CL.deque([]), header_table=FPT.htab, min_spt=FPT.MIN_SPT, trans_
 			cfptree, chtab = FPT.build_fptree(cpb_all_, len(cpb_all_),
 				min_spt, k)
 			mine_tree(p=p1, header_table=chtab, min_spt=min_spt,
-				trans_count=trans_count, c=c+5, f_list=f_list_)
+				trans_count=trans_count, f_list=f_list_)
 		elif not x:
 			q = ''.join(p1)
 			if len(q) > 1:
