@@ -1,0 +1,17 @@
+
+
+# TODO: refactor comprehensions as gen exp (check for 'list' calls)
+# TODO: make build_tree a partial so 'htab' doesn't have to passed in
+# TODO: above: add_nodes_ = partial(add_nodes, header_table=header_table)
+# TODO: create variable to avoid repeated lookups for 'parent_node.children[item]'
+# TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
+# TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
+# TODO: a few of these fns i think are memoizable
+# TODO: *** create tests for duplicate items in trans
+# TODO: in TreeNode, create 'repr' fn so node pointers print like 'name' attr
+
+# FIXME: refactor code to use integers rather than strings
+# TODO: write code to convert raw data into sequences of integers
+
+# TODO: for ui, just have the user call one function and pass in a config file name
+
