@@ -4,6 +4,7 @@
 import os
 import sys
 import re
+import csv as CSV
 from copy import deepcopy
 import json as JSON
 import collections as CL
@@ -23,7 +24,12 @@ def get_configs(config_fname):
 
 def load_data(dfile=None, max_transactions=250):
 	import random as RND
-	if dfile:
+	if dfile and dfile.endswith('.csv'):
+		with open(dfile, 'r', encoding='utf-8') as fh:
+ 			reader = CSV.reader(fh)
+ 			return [line for line in reader]
+
+	elif dfile and not dfile.endswith('.csv'):
 		with open(dfile, "r", encoding="utf-8") as fh:
 			data = [ line.strip().split(' ') for line in fh.readlines()
 				if not line.startswith('#') ]
@@ -43,26 +49,11 @@ def load_data(dfile=None, max_transactions=250):
 
 
 
-dataset = [
-	['B', 'D', 'A', 'E'],
-	['B', 'D', 'A', 'E', 'C'],
-	['B', 'A', 'E', 'C'],
-	['B', 'D', 'A'],
-	['D'],
-	['B', 'D'],
-	['D', 'A', 'E'],
-	['B', 'C']
-]
-
-MIN_SPT = 0.3
-MIN_ITEMSET_LENGTH = 2
-
-configs_filename = "~/Projects/fp-growth-for-frequent-itemsets/config.json"
+configs_filename = "~/Projects/fp-growth-for-frequent-itemsets/tests/configs_test/config-t1.json"
 configs = get_configs(configs_filename)
-# MIN_SPT = configs['min_support']
-# MIN_ITEMSET_LENGTH = configs['min_itemset_length']
-# dataset = load_data()
-# dataset = load_data(configs['data_file'])
+MIN_SPT = configs['min_support']
+MIN_ITEMSET_LENGTH = configs['min_itemset_length']
+dataset = load_data(configs['data_file'])
 TRANS_COUNT = len(dataset)
 
 
@@ -506,7 +497,23 @@ def itemset_begins_with(probe, fis):
 
 
 
+def main():
+	# configs_filename = "~/Projects/fp-growth-for-frequent-itemsets/tests/configs_test/config-t1.json"
+	configs_filename = sys.argv[1]
+	configs = get_configs(configs_filename)
+	MIN_SPT = configs['min_support']
+	MIN_ITEMSET_LENGTH = configs['min_itemset_length']
+	dataset = load_data(configs['data_file'])
+	TRANS_COUNT = len(dataset)
+
+
+
 #------------------------ example usage --------------------#
+
+if __name__ == '__main__':
+	main()
+
+
 
 SORT_KEY=get_sort_key(dataset)
 
