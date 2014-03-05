@@ -44,7 +44,6 @@ by nodes of the same type within a single fptree.
 
 some useful references on the subject of fp-trees and fo-growth:
 
-[I'm an inline-style link](https://www.google.com)
 
 [Prof Christian Borgelt's Site](http://www.borgelt.net/fpgrowth.html) inclues implementations of FP-Growth in C and a large number of academic references on this subject
 
