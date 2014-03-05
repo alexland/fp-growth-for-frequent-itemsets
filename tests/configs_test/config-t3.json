@@ -13,7 +13,7 @@
 
 	"db_id": 0,
 
-	"data_file": "/Users/dougybarbo/Projects/fp-growth-for-frequent-itemsets/data/lg_test_01.csv",
+	"data_file": "/Users/dougybarbo/Projects/fp-growth-for-frequent-itemsets/tests/data_test/lg_test_01.csv",
 
 	"project_dir": "Projects/fp-growth-for-frequent-itemsets",
 
