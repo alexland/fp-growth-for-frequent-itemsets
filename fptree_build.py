@@ -18,12 +18,7 @@ import functools as FT
 from functools import partial
 from functools import wraps
 
-
-def get_configs(config_fname):
-	config_file = os.path.expanduser(config_fname)
-	with open(config_file, 'r', encoding='utf-8') as fh:
-		return JSON.load(fh)
-
+import fptree_config as FPC
 
 def load_data(dfile=None, max_transactions=250):
 	import random as RND
@@ -52,7 +47,7 @@ def load_data(dfile=None, max_transactions=250):
 
 
 configs_filename = "~/Projects/fp-growth-for-frequent-itemsets/tests/configs_test/config-t6.json"
-configs = get_configs(configs_filename)
+configs = FPC.get_configs(configs_filename)
 MIN_SPT = configs['min_support']
 MIN_FREQ_ITEMSET_LENGTH = configs['min_freq_itemset_length']
 # dataset = load_data()
