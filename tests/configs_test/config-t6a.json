@@ -13,7 +13,7 @@
 
 	"db_id": 0,
 
-	"data_file": "/Users/dougybarbo/Projects/fp-growth-for-frequent-itemsets/tests/data_test/sm_test_05.csv",
+	"data_file": "/Users/dougybarbo/Projects/fp-growth-for-frequent-itemsets/tests/data_test/sm_test_06.csv",
 
 	"project_dir": "Projects/fp-growth-for-frequent-itemsets",
 
@@ -22,6 +22,6 @@
 	"remove_duplicate_items_in_trans": 0,
 
 	"target": {
-			"ABF": 5
+			"BFDA":5
 	}
 }
