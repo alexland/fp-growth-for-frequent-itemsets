@@ -46,7 +46,7 @@ def load_data(dfile=None, max_transactions=250):
 			return data
 
 
-configs_filename = "~/Projects/fp-growth-for-frequent-itemsets/tests/configs_test/config-t6.json"
+configs_filename = 'config-t6.json'
 configs = FPC.get_configs(configs_filename)
 MIN_SPT = configs['min_support']
 MIN_FREQ_ITEMSET_LENGTH = configs['min_freq_itemset_length']
