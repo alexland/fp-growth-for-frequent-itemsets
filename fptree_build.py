@@ -5,21 +5,60 @@
 
 """
 
-# TODO: refactor comprehensions as gen exp (check for 'list' calls)
-# TODO: make build_tree a partial so 'htab' doesn't have to passed in
-# TODO: above: add_nodes_ = partial(add_nodes, header_table=header_table)
-# TODO: create variable to avoid repeated lookups for 'parent_node.children[item]'
-# TODO: use CL.deque() where appropriate (in lieu of lists for htab.values() ?)
-# TODO: write viz module comprised of python obj --> JSON translator + pygraphviz render
-# TODO: a few of these fns i think are memoizable
-# TODO: *** create tests for duplicate items in trans
-# TODO: in TreeNode, create 'repr' fn so node pointers print like 'name' attr
-
-
-import collections as CL
+import os
+import sys
+import re
+import csv as CSV
+from copy import deepcopy
 from operator import itemgetter
-import functools as FT
+import json as JSON
+import collections as CL
 import itertools as IT
+import functools as FT
+from functools import partial
+from functools import wraps
+
+
+def get_configs(config_fname):
+	config_file = os.path.expanduser(config_fname)
+	with open(config_file, 'r', encoding='utf-8') as fh:
+		return JSON.load(fh)
+
+
+def load_data(dfile=None, max_transactions=250):
+	import random as RND
+	if dfile and dfile.endswith('.csv'):
+		with open(dfile, 'r', encoding='utf-8') as fh:
+ 			reader = CSV.reader(fh)
+ 			return [line for line in reader]
+
+	elif dfile and not dfile.endswith('.csv'):
+		with open(dfile, "r", encoding="utf-8") as fh:
+			data = [ line.strip().split(' ') for line in fh.readlines()
+				if not line.startswith('#') ]
+			RND.shuffle(data)
+			data = data[:max_transactions]
+	else:
+		import string
+		import random as RND
+		p = list(string.ascii_uppercase[:20])
+		fnx = lambda: RND.randint(2, 10)
+		data = [ RND.sample(p, fnx()) for c in range(100000) ]
+		RND.shuffle(data)
+		if max_transactions & max_transactions < len(data):
+			return data[:max_transactions]
+		else:
+			return data
+
+
+configs_filename = "~/Projects/fp-growth-for-frequent-itemsets/tests/configs_test/config-t6.json"
+configs = get_configs(configs_filename)
+MIN_SPT = configs['min_support']
+MIN_FREQ_ITEMSET_LENGTH = configs['min_freq_itemset_length']
+# dataset = load_data()
+dataset = load_data(configs['data_file'])
+TRANS_COUNT = len(dataset)
+
 
 
 #---------------------- building the fp-tree -----------------------#
@@ -39,23 +78,24 @@ def item_counter(dataset):
     return ic
 
 
-def get_items_below_min_spt(dataset, item_count, min_spt, trans_count):
+def get_items_below_min_spt(dataset, min_spt, trans_count):
     """
     returns: list of the unique items whose frequency over the
 		dataset is below some min_spt (float between 0 and 1,
 		('decimal percent')
 	pass in:
-		(i) dataset
-		(ii) dict w/ items for keys, values are item frequency
-		(iii) min_spt (float, eg, 0.03 means each item must appear in
+		(i) dataset (original dataset or conditional pattern bases)
+		(ii) min_spt (float, eg, 0.03 means each item must appear in
 		    at least 3% of the dataset)
-	        calls 'item_counter'
+		(iii) number of transactions in dataset or "conditional pattern
+			bases"
     """
+    item_count = item_counter(dataset)
     ic = {k:v for k, v in item_count.items() if (v/trans_count) < min_spt}
     return list(ic.keys())
 
 
-def build_min_spt_filter_str(excluded_items):
+def build_min_spt_filter_str(dataset, min_spt, trans_count):
 	"""
 	returns: a str which, when 'eval' is called on it, is a
 		a valid arg for 'IT.filterfalse' which is used in
@@ -65,6 +105,7 @@ def build_min_spt_filter_str(excluded_items):
 	"""
 	excluded_items_expr = []
 	str_templ = '(q=="{0}")'
+	excluded_items = get_items_below_min_spt(dataset, min_spt, trans_count)
 	for item in excluded_items:
 	    excluded_items_expr.append(str_templ.format(item))
 	return " | ".join(excluded_items_expr)
@@ -88,8 +129,7 @@ def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 	to call this fn, bind the call to two variables, like so:
 	filtered_trans, item_count_dict = filter_by_min_spt(...)
 	"""
-	excluded_items = get_items_below_min_spt(dataset, item_count,
-		min_spt, trans_count)
+	excluded_items = get_items_below_min_spt(dataset, min_spt, trans_count)
 	if not excluded_items:
 		# if all items are above min_spt, ie, there are no items to exclude
 		# so just return original args
@@ -98,7 +138,7 @@ def filter_by_min_spt(dataset, item_count, min_spt, trans_count):
 		# there is at least one item to exclude
 		# now build the expression required by 'IT.filterfalse' from the
 		# list of excluded items
-		filter_str = build_min_spt_filter_str(excluded_items)
+		filter_str = build_min_spt_filter_str(dataset, min_spt, trans_count)
 		# remove those items below min_spt threshold items
 		tx = [IT.filterfalse(lambda q: eval(filter_str), trans)
 				for trans in dataset]
@@ -121,6 +161,9 @@ def get_sort_key(dataset):
 	return {t[0]: i for i, t in enumerate(ic)}
 
 
+SORT_KEY = get_sort_key(dataset)
+
+
 def reorder_items(dataset, sort_key):
 	"""
 	returns: list of lists sorted by item frequency
@@ -132,7 +175,7 @@ def reorder_items(dataset, sort_key):
 	return map(fnx, dataset)
 
 
-def config_fptree_builder(dataset, trans_count, min_spt=None):
+def config_fptree_builder(dataset, trans_count, min_spt, sort_key):
 	"""
 	returns: header table & sorted dataset for input to build_tree
 		(latter returned as generator)
@@ -145,9 +188,8 @@ def config_fptree_builder(dataset, trans_count, min_spt=None):
 	"""
 	# dataset = [ set(trans) for trans in dataset ]
 	item_count = item_counter(dataset)
-	if min_spt:
-		dataset, item_count = filter_by_min_spt(dataset, item_count,
-								trans_count, min_spt)
+	dataset, item_count = filter_by_min_spt(dataset, item_count,
+		min_spt, trans_count)
 	sort_key = get_sort_key(dataset)
 	dataset_sorted = reorder_items(dataset, sort_key)
 	# build header table from freq_items w/ empty placeholders for node pointer
@@ -218,7 +260,7 @@ def add_nodes(trans, header_table, parent_node):
 			add_nodes(trans, header_table, this_node)
 
 
-def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
+def build_fptree(dataset, min_spt, trans_count, sort_key, root_node_name="root"):
 	"""
 	pass in:
 		(i) raw data (list of lists; one transcation per list)
@@ -233,7 +275,7 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	fptree = TreeNode(root_node_name, None)
 	root = fptree
 	header_table, dataset = config_fptree_builder(dataset, trans_count,
-		min_spt)
+		min_spt, sort_key)
 	for trans in dataset:
 		add_nodes(trans, header_table, root)
 	# trim the headertable so it includes just the first node_link
@@ -243,56 +285,13 @@ def build_fptree(dataset, trans_count, min_spt=None, root_node_name="root"):
 	return fptree, header_table
 
 
-def main(dataset):
-	return build_fptree(dataset=dataset, trans_count=TRANS_COUNT,
-		min_spt=MIN_SPT, root_node_name='root')
 
-
-def load_data(dfile=None):
-	if dfile:
-		with open(dfile, "r", encoding="utf-8") as fh:
-			return [ map(int, line.strip().split(',')) for line in
-				fh.readlines() ][:100]
-	else:
-		import string
-		import random as RND
-		dataset = [
-			    ['E', 'B', 'D', 'A'],
-				['E', 'A', 'D', 'C', 'B'],
-				['C', 'E', 'B', 'A'],
-				['A', 'B', 'D'],
-				['D'],
-				['D', 'B'],
-				['D', 'A', 'E'],
-				['B', 'C'],
-			]
-		p = list(string.ascii_uppercase[:5])
-		fnx = lambda: RND.randint(2, 5)
-		ds = [ RND.sample(p, fnx()) for c in range(1000) ]
-		ds.extend(dataset)
-		RND.shuffle(ds)
-		len(ds)
-	return ds
-
-dataset = load_data()
-TRANS_COUNT = len(dataset)
-MIN_SPT = 0.3
-SORT_KEY=get_sort_key(dataset)
-c_reorder_items = FT.partial(reorder_items,
-	sort_key=get_sort_key(dataset))
-
-fptree, htab = main(dataset)
-
-
-if __name__=="__main__":
-	# import cProfile
-	# cProfile.run("main(dataset)")
-	TRANS_COUNT = len(dataset)
-	MIN_SPT = 0.3
-	SORT_KEY=get_sort_key(dataset)
-	c_reorder_items = FT.partial(reorder_items,
-		sort_key=get_sort_key(dataset))
-	fptree, htab = main(dataset)
-
+fptree, htab = build_fptree(
+							dataset=dataset,
+							min_spt=MIN_SPT,
+							trans_count=TRANS_COUNT,
+							sort_key=SORT_KEY,
+							root_node_name='root',
+	)
 
 

@@ -21,3 +21,14 @@ def fpt(tn):
     print("children: {0}".format(list(tn.children.keys())))
     print("parent: {0}".format(tn.parent.name))
     print("\n")
+
+
+def gather_nodes(node, N=[]):
+    nx = node.children
+    if len(nx) == 0:
+        return N
+    else:
+        for n in nx.keys():
+            N.append(n)
+            gather_nodes(node.children[n], N)
+    return N
