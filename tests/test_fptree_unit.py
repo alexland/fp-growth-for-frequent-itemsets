@@ -6,7 +6,7 @@ from functools import partial
 import itertools as IT
 
 import pytest
-import fptree as FPT
+import fptree_build as FPT
 import fptree_query as FPQ
 
 #-------------------------- test set-up & tear-down -----------------#
@@ -65,25 +65,25 @@ def myFixture3(request):
 		return request.getfuncargvalue("myFixture2")
 
 
-def item_counter(dataset):
-	dataset = [set(trans) for trans in dataset]
-	# flatten the data (from list of sets to list of items)
-	trans_flat = [item for trans in dataset for itm in trans]
-	# get frequency of each item
-	ic = CL.defaultdict(int)
-	for item in trans_flat:
-		ic[item] += 1
-	return ic
+# def item_counter(dataset):
+# 	dataset = [set(trans) for trans in dataset]
+# 	# flatten the data (from list of sets to list of items)
+# 	trans_flat = [item for trans in dataset for itm in trans]
+# 	# get frequency of each item
+# 	ic = CL.defaultdict(int)
+# 	for item in trans_flat:
+# 		ic[item] += 1
+# 	return ic
 
 
-def build_fptree(data):
-	fptree = FPT.TreeNode('root', None)
-	root = fptree
-	htab, transactions = FPT.config_fptree_builder(data, len(data))
-	for trans in transactions:
-		FPT.add_nodes(trans, htab, root)
-	htab = {k:v[:2] for k, v in htab.items()}
-	return fptree, htab
+# def build_fptree(data):
+# 	fptree = FPT.TreeNode('root', None)
+# 	root = fptree
+# 	htab, transactions = FPT.config_fptree_builder(data, len(data))
+# 	for trans in transactions:
+# 		FPT.add_nodes(trans, htab, root)
+# 	htab = {k:v[:2] for k, v in htab.items()}
+# 	return fptree, htab
 
 #------------------------- test fns --------------------------------#
 
@@ -99,68 +99,68 @@ def test_3(myFixture3):
 	assert myFixture3 in (data1, data2)
 
 
-def test_item_counter():
-	ic = FPT.item_counter(data1)
-	kx = sorted(list(ic.keys()))
-	assert kx == sorted(['B', 'C', 'A', 'D', 'E'])
+# def test_item_counter():
+# 	ic = FPT.item_counter(data1)
+# 	kx = sorted(list(ic.keys()))
+# 	assert kx == sorted(['B', 'C', 'A', 'D', 'E'])
 
 
-def test2_item_counter():
-	ic = FPT.item_counter(data1)
-	vx = sorted(list(ic.values()))
-	assert vx == sorted([7, 3, 5, 6, 4])
+# def test2_item_counter():
+# 	ic = FPT.item_counter(data1)
+# 	vx = sorted(list(ic.values()))
+# 	assert vx == sorted([7, 3, 5, 6, 4])
 
 
-# def test_get_items_below_min_spt():
+# def test_get_items_below_MIN_SPT():
 # 	item_count = item_counter(data1)
-# 	assert FPT.get_items_below_min_spt(data1, item_count, 
-# 		min_spt=0.55) == ["C", "E"]
+# 	assert FPT.get_items_below_MIN_SPT(data1, item_count,
+# 		MIN_SPT=0.55) == ["C", "E"]
 
 
-def test_build_min_spt_filter_str():
-	assert FPT.build_min_spt_filter_str(["A", "B"]) == '(q=="A") | (q=="B")'
+# def test_build_MIN_SPT_filter_str():
+# 	assert FPT.build_MIN_SPT_filter_str(["A", "B"]) == '(q=="A") | (q=="B")'
 
 
-def test2_build_min_spt_filter_str():
-	assert FPT.build_min_spt_filter_str(["A"]) == '(q=="A")'
+# def test2_build_MIN_SPT_filter_str():
+# 	assert FPT.build_MIN_SPT_filter_str(["A"]) == '(q=="A")'
 
 
-def test3_build_min_spt_filter_str():
-	import string
-	excl_items = string.ascii_uppercase[:6]
-	assert FPT.build_min_spt_filter_str(excl_items) == '(q=="A") | (q=="B") | (q=="C") | (q=="D") | (q=="E") | (q=="F")'
+# def test3_build_MIN_SPT_filter_str():
+# 	import string
+# 	excl_items = string.ascii_uppercase[:6]
+# 	assert FPT.build_MIN_SPT_filter_str(excl_items) == '(q=="A") | (q=="B") | (q=="C") | (q=="D") | (q=="E") | (q=="F")'
 
 
 # unit tests for fptree_query:
 
-def test2_flist():
-    min_spt = 0.3
-    item = "C"
-    _, htab = build_fptree(data1)
-    cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
-    f_list = FPQ.create_flist(data1, cpb_all, min_spt)
-    assert len(f_list.items()) == 1
+# def test2_flist():
+#     MIN_SPT = 0.3
+#     item = "C"
+#     _, htab = build_fptree(data1)
+#     cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
+#     f_list = FPQ.create_flist(data1, cpb_all, MIN_SPT)
+#     assert len(f_list.items()) == 1
 
 
-def test2_flist():
-    min_spt = 0.3
-    item = "C"
-    _, htab = build_fptree(data1)
-    cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
-    f_list = FPQ.create_flist(data1, cpb_all, min_spt)
-    assert list(f_list.values())[0] == 3
+# def test2_flist():
+#     MIN_SPT = 0.3
+#     item = "C"
+#     _, htab = build_fptree(data1)
+#     cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
+#     f_list = FPQ.create_flist(data1, cpb_all, MIN_SPT)
+#     assert list(f_list.values())[0] == 3
 
 
-def test3_f_list():
-    trans_count = len(data1) 
-    min_spt = 0.3
-    item = "C"
-    _, htab = build_fptree(data1)
-    cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
-    f_list = FPQ.create_flist(data1, cpb_all, min_spt)
-    assert list(f_list.keys())[0] == 'B'
+# def test3_f_list():
+#     trans_count = len(data1)
+#     MIN_SPT = 0.3
+#     item = "C"
+#     _, htab = build_fptree(data1)
+#     cpb_all = FPQ.get_conditional_pattern_bases('C', htab)
+#     f_list = FPQ.create_flist(data1, cpb_all, MIN_SPT)
+#     assert list(f_list.keys())[0] == 'B'
 
 
- 
+
 
 
