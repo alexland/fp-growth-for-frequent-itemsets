@@ -1,9 +1,47 @@
-*.pyc
-*.DS_Store
-*.csv
-*.jpg
+
+
+data/
+/ipython-notebooks/.ipynb_checkpoints/*
+
+# byte-compiled/optimized/dll files
+__pycache__/
+*.py[cod]
+
+# c extensions
+*.so
+
+# distribution/packaging
+.Python
+env/
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# test output
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# editor
 *.sublime-project
 *.sublime-workspace
-/data/*
-/ipython-notebooks/.ipynb_checkpoints/*
-/__pycache__/*
+
+# sphinx
+docs/_build/
+
