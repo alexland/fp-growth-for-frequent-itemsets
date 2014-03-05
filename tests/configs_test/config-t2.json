@@ -1,0 +1,32 @@
+{
+	"min_support": 0.3,
+
+	"min_freq_itemset_length": 3,
+
+	"db_config": "redis-fpg.conf",
+
+	"db_filepath": "data",
+
+	"db_port": 6379,
+
+	"db_host": "http://127.0.0.1",
+
+	"db_id": 0,
+
+	"data_file": "/Users/dougybarbo/Projects/fp-growth-for-frequent-itemsets/data/sm_test_01.csv",
+
+	"project_dir": "Projects/fp-growth-for-frequent-itemsets",
+
+	"max_transactions": 250,
+
+	"remove_duplicate_items_in_trans": 0,
+
+	"target": {
+			"ABE": 3,
+			"ADE": 3,
+			"BDA": 3
+	}
+}
+
+
+
