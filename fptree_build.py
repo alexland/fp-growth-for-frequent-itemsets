@@ -20,13 +20,13 @@ from functools import wraps
 
 import fptree_config as FPC
 
-configs_filename = 'config-t6.json'
-configs = FPC.get_configs(configs_filename)
-MIN_SPT = configs['min_support']
-MIN_FREQ_ITEMSET_LENGTH = configs['min_freq_itemset_length']
+# configs_filename = 'config-t6.json'
+# configs = FPC.get_configs(configs_filename)
+# MIN_SPT = configs['min_support']
+# MIN_FREQ_ITEMSET_LENGTH = configs['min_freq_itemset_length']
 # dataset = load_data()
-dataset = FPC.load_data(configs['data_file'])
-TRANS_COUNT = len(dataset)
+# dataset = FPC.load_data(configs['data_file'])
+# TRANS_COUNT = len(dataset)
 
 
 
