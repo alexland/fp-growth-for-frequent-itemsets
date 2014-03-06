@@ -19,14 +19,15 @@ def get_configs(fname, configs_dir=os.path.abspath('tests/configs_test/')):
 		return JSON.load(fh)
 
 
-def load_data(dfile=None, max_transactions=250):
+def load_data(fname=None, data_dir=os.path.abspath('tests/data_test/'),max_transactions=250):
 	import random as RND
-	if dfile and dfile.endswith('.csv'):
-		with open(dfile, 'r', encoding='utf-8') as fh:
+	data_file = os.path.join(data_dir, fname)
+	if fname and fname.endswith('.csv'):
+		with open(data_file, 'r', encoding='utf-8') as fh:
  			reader = CSV.reader(fh)
  			return [line for line in reader]
 
-	elif dfile and not dfile.endswith('.csv'):
+	elif fname and not fname.endswith('.csv'):
 		with open(dfile, "r", encoding="utf-8") as fh:
 			data = [ line.strip().split(' ') for line in fh.readlines()
 				if not line.startswith('#') ]
