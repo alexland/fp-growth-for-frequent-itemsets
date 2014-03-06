@@ -28,6 +28,7 @@ import fptree_config as FPC
 # dataset = FPC.load_data(configs['data_file'])
 # TRANS_COUNT = len(dataset)
 
+dataset = FPC.load_data('sm_test_06.csv')
 
 
 #---------------------- building the fp-tree -----------------------#
