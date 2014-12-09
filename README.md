@@ -5,6 +5,13 @@ FP-Growth: compact storage & very fast retrieval of frequent item sets
 
 -----
 
+![GitHub Logo](https://cloud.githubusercontent.com/assets/135041/5352358/3a3a5d8c-7f19-11e4-9317-35e94e5be263.png)
+
+
+
+
+
+
 to run the tests for this library:
 
 ```
