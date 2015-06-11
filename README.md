@@ -19,6 +19,10 @@ python3 runtests.py -v
 
 ```
 
+applications:
+
+- identifying unique sequences eg of pageviews for clickstream analysis
+
 definitions:
 
 *  _**fp-tree**_: a graph that provides a compact encoding of transaction data and enables efficient retrieval of frequent itemsets (frequently recurring sequences of elements that comprise the transaction data)
