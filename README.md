@@ -23,6 +23,8 @@ applications:
 
 - identifying unique sequences eg of pageviews for clickstream analysis
 
+- type-ahead
+
 definitions:
 
 *  _**fp-tree**_: a graph that provides a compact encoding of transaction data and enables efficient retrieval of frequent itemsets (frequently recurring sequences of elements that comprise the transaction data)
