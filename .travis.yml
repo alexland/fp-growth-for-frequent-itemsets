@@ -1,11 +1,13 @@
-language: 
+language:
     - python
 # python version
 python:
   - 3.3
-# install dependencies 
+# install dependencies
 install:
     - pip install -r requirements.txt --use-mirrors
 # run tests
 script:
     - python3 runtests.py
+sudo:
+    false
