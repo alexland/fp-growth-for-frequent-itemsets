@@ -116,7 +116,7 @@ def myFixture(request):
 # 	"""
 # 	pass in: dataset & single transaction item (str), which
 # 		can be any key in the header_table;
-# 	returns: linked_nodes (list) comprised of all node names
+# 	returns: linked_nodes (list) composed of all node names
 # 		linked in one continuous route;
 # 	checks that the 'node_link' attribute for any node points
 # 	to another having the same 'name' attribute (ie, all nodes
@@ -137,7 +137,7 @@ def myFixture(request):
 # 	"""
 # 	pass in: dataset & single transaction item (str), which
 # 		can be any key in the header_table;
-# 	returns: a linked_nodes (list) comprised of all node names
+# 	returns: a linked_nodes (list) composed of all node names
 # 		linked in one continuous route;
 # 	checks that the 'node_link' attribute for any node points
 # 	to another having the same 'name' attribute (ie, all nodes

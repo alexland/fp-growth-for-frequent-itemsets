@@ -67,7 +67,7 @@ def ascend_route(node, string_repr=False):
 
 def get_conditional_pattern_bases(item, header_table=FPT.htab):
 	"""
-	returns: a list of tuples, each tuple comprised of a conditional pattern base
+	returns: a list of tuples, each tuple composed of a conditional pattern base
 	(node route) and the count for that cpb
 	pass in:
 		(i) str/int representation of a given unique transaction item
